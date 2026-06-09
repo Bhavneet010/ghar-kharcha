@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#168a63" />
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<title>Ghar Kharcha — Daily Expenses</title>
+<style>
+  :root{
+    --bg:#0f1411; --card:#18211c; --card2:#1f2a23; --line:#2b372f;
+    --text:#eaf2ec; --muted:#9bb0a4; --accent:#21c08b; --accent2:#168a63;
+    --warn:#e0a800; --danger:#e5484d; --blue:#4c8dff;
+    --radius:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    background:var(--bg); color:var(--text); padding-bottom:84px;
+    max-width:560px; margin:0 auto; min-height:100vh;
+  }
+  header{position:sticky; top:0; z-index:20; background:linear-gradient(180deg,#13201a,#0f1411);
+    padding:14px 16px 10px; border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand b{font-size:18px;letter-spacing:.2px}
+  .whoami{margin-left:auto;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .whoami button{background:none;border:1px solid var(--line);color:var(--muted);
+    padding:4px 9px;border-radius:999px;font-size:12px}
+  main{padding:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+  .card h3{margin:0 0 10px;font-size:14px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+  .balance{font-size:40px;font-weight:700;letter-spacing:-1px;line-height:1.1}
+  .balance.low{color:var(--danger)}
+  .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .row{display:flex;gap:10px;align-items:center}
+  .row.between{justify-content:space-between}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--line);
+    border-radius:999px;padding:6px 12px;font-size:13px;margin:4px 6px 0 0;cursor:pointer}
+  .pill.active{background:var(--accent2);border-color:var(--accent);color:#fff}
+  .banner{border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
+  .banner.warn{background:rgba(224,168,0,.13);border:1px solid rgba(224,168,0,.4);color:#f4d76b}
+  .banner.danger{background:rgba(229,72,77,.13);border:1px solid rgba(229,72,77,.4);color:#ff9b9e}
+  .banner.info{background:rgba(76,141,255,.12);border:1px solid rgba(76,141,255,.35);color:#a9c8ff}
+  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}
+  input,select{width:100%;padding:12px;background:var(--card2);border:1px solid var(--line);
+    color:var(--text);border-radius:12px;font-size:16px}
+  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  button{cursor:pointer;font-family:inherit}
+  .btn{display:block;width:100%;padding:14px;background:var(--accent);color:#04150e;border:none;
+    border-radius:12px;font-size:16px;font-weight:700;margin-top:14px}
+  .btn:active{transform:translateY(1px)}
+  .btn.sec{background:var(--card2);color:var(--text);border:1px solid var(--line);font-weight:600}
+  .btn.danger{background:transparent;color:var(--danger);border:1px solid rgba(229,72,77,.4)}
+  .list-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .list-item:last-child{border-bottom:none}
+  .list-item .amt{margin-left:auto;font-weight:700;white-space:nowrap}
+  .muted{color:var(--muted)} .small{font-size:12px}
+  .tag{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line);color:var(--muted)}
+  .person-b{color:#7fd3ff} .person-r{color:#ff9ecb} .person-c{color:#ffd27f}
+  nav{position:fixed;bottom:0;left:0;right:0;max-width:560px;margin:0 auto;display:flex;
+    background:#10180f;border-top:1px solid var(--line);padding:6px 4px env(safe-area-inset-bottom)}
+  nav button{flex:1;background:none;border:none;color:var(--muted);font-size:11px;padding:8px 2px;
+    display:flex;flex-direction:column;align-items:center;gap:3px}
+  nav button.active{color:var(--accent)}
+  nav svg{width:22px;height:22px}
+  .fab{position:fixed;right:18px;bottom:90px;max-width:560px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .stat{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .stat .n{font-size:20px;font-weight:700;margin-top:2px}
+  .item-line{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .item-line input.name{flex:2} .item-line input.amt{flex:1}
+  .item-line button{background:none;border:none;color:var(--danger);font-size:20px;padding:0 6px}
+  .hidden{display:none!important}
+  .center{text-align:center}
+  .chip-add{background:var(--card2);border:1px dashed var(--line);color:var(--accent);border-radius:999px;padding:6px 12px;font-size:13px;margin:4px 6px 0 0}
+  .empty{text-align:center;color:var(--muted);padding:26px 10px;font-size:14px}
+  dialog{border:none;background:var(--card);color:var(--text);border-radius:16px;padding:0;width:90%;max-width:440px}
+  dialog::backdrop{background:rgba(0,0,0,.6)}
+  .dlg-body{padding:18px}
+  .seg{display:flex;gap:8px;margin-top:6px}
+  .seg .pill{margin:0;flex:1;justify-content:center}
+  a.link{color:var(--blue);text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- ======= LOGIN ======= -->
+<div id="login" class="hidden">
+  <main style="padding-top:60px">
+    <div class="center" style="margin-bottom:24px">
+      <div style="font-size:46px">₹</div>
+      <h2 style="margin:6px 0 2px">Ghar Kharcha</h2>
+      <p class="muted small">Shared kitchen expenses · pick who you are</p>
+    </div>
+    <div id="loginPeople"></div>
+    <p class="muted small center" style="margin-top:18px">Your choice is remembered on this phone. You can switch anytime.</p>
+  </main>
+</div>
+
+<!-- ======= APP ======= -->
+<div id="app" class="hidden">
+  <header>
+    <div class="brand">
+      <span style="font-size:22px">₹</span><b>Ghar Kharcha</b>
+      <span class="whoami"><span id="whoLabel"></span><button id="switchUser">switch</button></span>
+    </div>
+  </header>
+  <main>
+    <!-- HOME -->
+    <section id="view-home">
+      <div id="alertSlot"></div>
+      <div class="card">
+        <h3>Cook's balance (advance left)</h3>
+        <div id="balanceVal" class="balance">₹0</div>
+        <div class="sub" id="balanceSub">No advance recorded yet</div>
+      </div>
+
+      <div class="card">
+        <h3>Who has paid — settle up</h3>
+        <div id="ledgerBox"></div>
+      </div>
+
+      <div class="card">
+        <h3>This month so far</h3>
+        <div class="grid2">
+          <div class="stat"><div class="muted small">Grocery spend</div><div class="n" id="mGroc">₹0</div></div>
+          <div class="stat"><div class="muted small">Salary paid</div><div class="n" id="mSal">₹0</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Recent shopping</h3>
+        <div id="recentList"></div>
+      </div>
+    </section>
+
+    <!-- SHOP -->
+    <section id="view-shop" class="hidden">
+      <div class="card">
+        <h3>Log today's shopping</h3>
+        <label>Date</label>
+        <input type="date" id="shopDate" />
+        <label>Tap items bought (quick add)</label>
+        <div id="quickChips"></div>
+        <label style="margin-top:14px">Items &amp; amounts</label>
+        <div id="itemLines"></div>
+        <button class="btn sec" id="addItemLine">+ Add another item</button>
+        <label style="margin-top:14px">Note (optional)</label>
+        <input id="shopNote" placeholder="e.g. extra for guests" />
+        <div class="row between" style="margin-top:14px">
+          <span class="muted">Total</span>
+          <span id="shopTotal" style="font-size:22px;font-weight:700">₹0</span>
+        </div>
+        <button class="btn" id="saveShop">Save shopping</button>
+      </div>
+    </section>
+
+    <!-- MONEY -->
+    <section id="view-money" class="hidden">
+      <div class="card">
+        <h3>Give advance to cook</h3>
+        <label>Amount</label>
+        <input type="number" id="topAmt" inputmode="numeric" placeholder="e.g. 5000" />
+        <label>Paid by</label>
+        <div class="seg" id="topPaidBy"></div>
+        <label>Date</label>
+        <input type="date" id="topDate" />
+        <button class="btn" id="saveTop">Add advance</button>
+      </div>
+
+      <div class="card">
+        <h3>Cook's monthly salary</h3>
+        <label>Month</label>
+        <input type="month" id="salMonth" />
+        <label>Amount</label>
+        <input type="number" id="salAmt" inputmode="numeric" placeholder="e.g. 8000" />
+        <label>Paid by</label>
+        <div class="seg" id="salPaidBy"></div>
+        <button class="btn" id="saveSal">Record salary</button>
+        <div id="salList" style="margin-top:14px"></div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="view-history" class="hidden">
+      <div class="card">
+        <h3>All activity</h3>
+        <div class="seg" style="margin-bottom:10px">
+          <button class="pill active" data-filter="all">All</button>
+          <button class="pill" data-filter="expense">Shopping</button>
+          <button class="pill" data-filter="topup">Advances</button>
+          <button class="pill" data-filter="salary">Salary</button>
+        </div>
+        <div id="historyList"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="view-settings" class="hidden">
+      <div class="card">
+        <h3>Low-balance alert</h3>
+        <label>Warn me when balance falls below</label>
+        <input type="number" id="setThreshold" inputmode="numeric" />
+        <button class="btn sec" id="enableNotif">Enable phone notifications</button>
+      </div>
+      <div class="card">
+        <h3>Quick-add item list</h3>
+        <div id="itemEditor"></div>
+        <div class="row" style="margin-top:10px">
+          <input id="newItemName" placeholder="Add an item…" />
+          <button class="btn sec" style="width:auto;margin:0;padding:12px 16px" id="addCommon">Add</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>People</h3>
+        <div id="peopleList"></div>
+      </div>
+      <div class="card">
+        <h3>Backup</h3>
+        <p class="muted small">Until cloud sync is set up, export keeps a copy of your data.</p>
+        <button class="btn sec" id="exportData">Export data (JSON)</button>
+        <label style="margin-top:10px">Import a backup file</label>
+        <input type="file" id="importData" accept="application/json" />
+      </div>
+      <div class="card">
+        <h3>About</h3>
+        <p class="muted small">Ghar Kharcha · prototype v1. Data is stored on this phone only.
+        Cloud sync across all three phones is the next step — see the setup guide.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav id="nav">
+    <button data-view="home" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</button>
+    <button data-view="shop">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M6 6L5 3H2"/></svg>Shop</button>
+    <button data-view="money">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>Money</button>
+    <button data-view="history">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>History</button>
+    <button data-view="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.3 1a7 7 0 0 0-1.7-1l-.4-2.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.3-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.5-2-1.5c.1-.3.1-.7.1-1z"/></svg>Settings</button>
+  </nav>
+</div>
+
+<script>
+/* =====================================================================
+   DATA LAYER
+   Everything goes through Store.*  Right now it persists to localStorage.
+   To add multi-phone sync later, replace the load()/save() bodies with
+   Supabase calls — the rest of the app does not change.
+   ===================================================================== */
+const KEY = 'ghk_data_v1';
+const DEFAULT_DATA = {
+  people: [
+    { id: 'b', name: 'Bhavneet', role: 'payer' },
+    { id: 'r', name: 'Ritika',   role: 'payer' },
+    { id: 'c', name: 'Cook',     role: 'cook'  }
+  ],
+  topups: [],     // {id,date,amount,paidBy,note}
+  expenses: [],   // {id,date,items:[{name,amount}],total,loggedBy,note}
+  salaries: [],   // {id,month,amount,paidBy}
+  commonItems: ['Milk','Bread','Eggs','Atta','Rice','Dal','Onion','Tomato','Potato',
+    'Mixed vegetables','Curd','Paneer','Cooking oil','Sugar','Tea','Salt',
+    'Green chilli','Ginger-garlic','Coriander','Fruits','Chicken','Spices','Ghee'],
+  settings: { lowBalanceThreshold: 1000 }
+};
+
+const Store = {
+  data: null,
+  load(){
+    try { this.data = JSON.parse(localStorage.getItem(KEY)) || structuredClone(DEFAULT_DATA); }
+    catch(e){ this.data = structuredClone(DEFAULT_DATA); }
+    // backfill any missing keys
+    for (const k in DEFAULT_DATA) if (!(k in this.data)) this.data[k] = structuredClone(DEFAULT_DATA[k]);
+    return this.data;
+  },
+  save(){ localStorage.setItem(KEY, JSON.stringify(this.data)); },
+  id(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+};
+
+/* current user (per device) */
+const USER_KEY = 'ghk_user';
+let currentUser = localStorage.getItem(USER_KEY) || null;
+
+/* ===================== HELPERS ===================== */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const fmt = (n) => '₹' + (Math.round(n)).toLocaleString('en-IN');
+const fmt2 = (n) => '₹' + Number(n).toLocaleString('en-IN',{maximumFractionDigits:2});
+const today = () => new Date().toISOString().slice(0,10);
+const thisMonth = () => new Date().toISOString().slice(0,7);
+const personById = (id) => Store.data.people.find(p=>p.id===id) || {name:'?'};
+const personClass = (id) => id==='b'?'person-b':id==='r'?'person-r':'person-c';
+function payers(){ return Store.data.people.filter(p=>p.role==='payer'); }
+
+/* ===================== CALCULATIONS ===================== */
+function balance(){
+  const ins = Store.data.topups.reduce((s,t)=>s+Number(t.amount),0);
+  const out = Store.data.expenses.reduce((s,e)=>s+Number(e.total),0);
+  return ins - out;
+}
+function contributions(){
+  // total each payer has put in (advances + salary)
+  const map = {};
+  payers().forEach(p=>map[p.id]=0);
+  Store.data.topups.forEach(t=>{ if(t.paidBy in map) map[t.paidBy]+=Number(t.amount); });
+  Store.data.salaries.forEach(s=>{ if(s.paidBy in map) map[s.paidBy]+=Number(s.amount); });
+  return map;
+}
+function monthTotals(m=thisMonth()){
+  const groc = Store.data.expenses.filter(e=>e.date.slice(0,7)===m).reduce((s,e)=>s+Number(e.total),0);
+  const sal  = Store.data.salaries.filter(s=>s.month===m).reduce((s,x)=>s+Number(x.amount),0);
+  return { groc, sal };
+}
+
+/* ===================== RENDER ===================== */
+function renderAll(){
+  renderHome(); renderQuickChips(); renderItemEditor(); renderPeople();
+  renderSalList(); renderHistory(); renderPaidBySegs();
+  $('#setThreshold').value = Store.data.settings.lowBalanceThreshold;
+  $('#whoLabel').textContent = personById(currentUser).name;
+}
+
+function renderHome(){
+  const bal = balance();
+  const thr = Store.data.settings.lowBalanceThreshold;
+  const el = $('#balanceVal');
+  el.textContent = fmt(bal);
+  el.classList.toggle('low', bal < thr);
+  const totalIn = Store.data.topups.reduce((s,t)=>s+Number(t.amount),0);
+  $('#balanceSub').textContent = Store.data.topups.length
+    ? `${fmt(totalIn)} given in total · ${fmt(totalIn-bal)} spent`
+    : 'No advance recorded yet — add one under Money';
+
+  // alerts
+  const slot = $('#alertSlot'); slot.innerHTML='';
+  if (Store.data.topups.length){
+    if (bal < 0){
+      slot.innerHTML = banner('danger','Overspent','Cook has spent more than the advance given. Add an advance under Money.');
+    } else if (bal < thr){
+      slot.innerHTML = banner('danger','Balance low', `Only ${fmt(bal)} left with the cook (alert set at ${fmt(thr)}). Time to top up.`);
+    } else if (bal < thr*2){
+      slot.innerHTML = banner('warn','Running low soon', `${fmt(bal)} left. You may want to give an advance shortly.`);
+    }
+  }
+
+  // ledger / settle-up
+  const c = contributions();
+  const ps = payers();
+  let html = '';
+  ps.forEach(p=>{
+    html += `<div class="list-item"><span class="${personClass(p.id)}">●</span> ${p.name}
+      <span class="amt">${fmt(c[p.id]||0)}</span></div>`;
+  });
+  if (ps.length===2){
+    const [a,b] = ps;
+    const diff = (c[a.id]||0) - (c[b.id]||0);
+    if (Math.abs(diff) < 1){
+      html += `<div class="banner info" style="margin-top:12px">All square 🎉 You've both paid the same so far.</div>`;
+    } else {
+      const behind = diff>0 ? b : a;        // paid less
+      const ahead  = diff>0 ? a : b;
+      const gap = Math.abs(diff);
+      html += `<div class="banner info" style="margin-top:12px">
+        <b class="${personClass(behind.id)}">${behind.name}</b>&nbsp;should pay next —
+        ${fmt(gap/2)} to ${ahead.name} would make you even
+        (or just cover the next ${fmt(gap)} of advance/salary).</div>`;
+    }
+  }
+  $('#ledgerBox').innerHTML = html;
+
+  // month stats
+  const mt = monthTotals();
+  $('#mGroc').textContent = fmt(mt.groc);
+  $('#mSal').textContent  = fmt(mt.sal);
+
+  // recent shopping
+  const recent = [...Store.data.expenses].sort((x,y)=>y.date.localeCompare(x.date)).slice(0,5);
+  $('#recentList').innerHTML = recent.length
+    ? recent.map(e=>expenseRow(e)).join('')
+    : `<div class="empty">No shopping logged yet.<br>Tap <b>Shop</b> below to add today's items.</div>`;
+}
+function banner(type,title,msg){
+  const icon = type==='danger'?'⚠️':type==='warn'?'🔔':'ℹ️';
+  return `<div class="banner ${type}"><span>${icon}</span><span><b>${title}.</b> ${msg}</span></div>`;
+}
+function expenseRow(e){
+  const names = e.items.map(i=>i.name).join(', ');
+  return `<div class="list-item">
+    <div><div>${prettyDate(e.date)}</div>
+      <div class="muted small">${names || 'Shopping'}${e.note?' · '+e.note:''}
+      · by ${personById(e.loggedBy).name}</div></div>
+    <span class="amt">${fmt(e.total)}</span></div>`;
+}
+function prettyDate(d){
+  const dt = new Date(d+'T00:00');
+  return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+
+/* ---- SHOP tab ---- */
+let shopItems = [];   // {name,amount}
+function renderQuickChips(){
+  $('#quickChips').innerHTML = Store.data.commonItems
+    .map(n=>`<button class="pill" data-item="${n}">+ ${n}</button>`).join('');
+}
+function renderItemLines(){
+  const box = $('#itemLines'); box.innerHTML='';
+  if (!shopItems.length) shopItems.push({name:'',amount:''});
+  shopItems.forEach((it,i)=>{
+    const div = document.createElement('div'); div.className='item-line';
+    div.innerHTML = `<input class="name" placeholder="Item" value="${it.name.replace(/"/g,'&quot;')}">
+      <input class="amt" inputmode="numeric" placeholder="₹" value="${it.amount}">
+      <button title="remove">×</button>`;
+    const [nm,am,rm] = [div.querySelector('.name'),div.querySelector('.amt'),div.querySelector('button')];
+    nm.oninput = ()=>{ it.name=nm.value; };
+    am.oninput = ()=>{ it.amount=am.value; updateShopTotal(); };
+    rm.onclick = ()=>{ shopItems.splice(i,1); renderItemLines(); updateShopTotal(); };
+    box.appendChild(div);
+  });
+}
+function updateShopTotal(){
+  const t = shopItems.reduce((s,i)=>s+(Number(i.amount)||0),0);
+  $('#shopTotal').textContent = fmt(t);
+}
+
+/* ---- MONEY tab ---- */
+function renderPaidBySegs(){
+  ['#topPaidBy','#salPaidBy'].forEach(sel=>{
+    const box = $(sel); box.innerHTML='';
+    payers().forEach((p,i)=>{
+      const b = document.createElement('button');
+      b.className = 'pill' + (i===0?' active':'');
+      b.textContent = p.name; b.dataset.id = p.id;
+      b.onclick = ()=>{ $$('.pill',box).forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+      box.appendChild(b);
+    });
+  });
+}
+function pickedPayer(sel){ const a=$(sel+' .pill.active'); return a?a.dataset.id:payers()[0].id; }
+function renderSalList(){
+  const list = [...Store.data.salaries].sort((a,b)=>b.month.localeCompare(a.month)).slice(0,6);
+  $('#salList').innerHTML = list.length
+    ? list.map(s=>`<div class="list-item"><div>${monthLabel(s.month)}
+        <div class="muted small">by ${personById(s.paidBy).name}</div></div>
+        <span class="amt">${fmt(s.amount)}</span></div>`).join('')
+    : '<div class="muted small">No salary recorded yet.</div>';
+}
+function monthLabel(m){ return new Date(m+'-01T00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'}); }
+
+/* ---- HISTORY tab ---- */
+let histFilter = 'all';
+function renderHistory(){
+  let rows = [];
+  Store.data.expenses.forEach(e=>rows.push({type:'expense',date:e.date,obj:e}));
+  Store.data.topups.forEach(t=>rows.push({type:'topup',date:t.date,obj:t}));
+  Store.data.salaries.forEach(s=>rows.push({type:'salary',date:s.month+'-01',obj:s}));
+  rows = rows.filter(r=>histFilter==='all'||r.type===histFilter)
+             .sort((a,b)=>b.date.localeCompare(a.date));
+  const box = $('#historyList');
+  if (!rows.length){ box.innerHTML='<div class="empty">Nothing here yet.</div>'; return; }
+  box.innerHTML = rows.map(r=>{
+    if (r.type==='expense') return expenseRow(r.obj);
+    if (r.type==='topup') return `<div class="list-item"><div><span class="tag">Advance</span>
+        ${prettyDate(r.obj.date)} <div class="muted small">paid by ${personById(r.obj.paidBy).name}${r.obj.note?' · '+r.obj.note:''}</div></div>
+        <span class="amt" style="color:var(--accent)">+${fmt(r.obj.amount)}</span></div>`;
+    return `<div class="list-item"><div><span class="tag">Salary</span> ${monthLabel(r.obj.month)}
+        <div class="muted small">paid by ${personById(r.obj.paidBy).name}</div></div>
+        <span class="amt">${fmt(r.obj.amount)}</span></div>`;
+  }).join('');
+}
+
+/* ---- SETTINGS ---- */
+function renderItemEditor(){
+  $('#itemEditor').innerHTML = Store.data.commonItems.map((n,i)=>
+    `<span class="pill" data-i="${i}">${n} <span style="color:var(--danger);margin-left:4px">×</span></span>`).join('');
+}
+function renderPeople(){
+  $('#peopleList').innerHTML = Store.data.people.map(p=>
+    `<div class="list-item"><span class="${personClass(p.id)}">●</span> ${p.name}
+      <span class="tag" style="margin-left:auto">${p.role==='cook'?'Cook · logs only':'Pays'}</span></div>`).join('');
+}
+
+/* ===================== EVENTS ===================== */
+// nav
+$$('#nav button').forEach(b=>b.onclick=()=>{
+  $$('#nav button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  $$('main > section').forEach(s=>s.classList.add('hidden'));
+  $('#view-'+b.dataset.view).classList.remove('hidden');
+  if (b.dataset.view==='shop'){ resetShopForm(); }
+  window.scrollTo(0,0);
+});
+
+function resetShopForm(){
+  $('#shopDate').value = today();
+  shopItems = [{name:'',amount:''}];
+  $('#shopNote').value='';
+  renderItemLines(); updateShopTotal();
+}
+
+// quick chips
+$('#quickChips').onclick = (e)=>{
+  const btn = e.target.closest('[data-item]'); if(!btn) return;
+  const name = btn.dataset.item;
+  // fill first empty line, else add new
+  let line = shopItems.find(i=>!i.name);
+  if (line) line.name = name; else shopItems.push({name,amount:''});
+  renderItemLines(); updateShopTotal();
+};
+$('#addItemLine').onclick = ()=>{ shopItems.push({name:'',amount:''}); renderItemLines(); };
+
+$('#saveShop').onclick = ()=>{
+  const items = shopItems.filter(i=>i.name.trim() && Number(i.amount)>0)
+    .map(i=>({name:i.name.trim(), amount:Number(i.amount)}));
+  if (!items.length){ alert('Add at least one item with an amount.'); return; }
+  const total = items.reduce((s,i)=>s+i.amount,0);
+  const before = balance();
+  Store.data.expenses.push({ id:Store.id(), date:$('#shopDate').value||today(),
+    items, total, loggedBy:currentUser, note:$('#shopNote').value.trim() });
+  Store.save();
+  // low-balance notification
+  const after = before - total;
+  const thr = Store.data.settings.lowBalanceThreshold;
+  if (after < thr && before >= thr) notify('Balance low', `Only ${fmt(after)} left with the cook.`);
+  renderAll(); goHome();
+};
+
+// money: advance
+$('#saveTop').onclick = ()=>{
+  const amt = Number($('#topAmt').value);
+  if (!(amt>0)){ alert('Enter an amount.'); return; }
+  Store.data.topups.push({ id:Store.id(), date:$('#topDate').value||today(),
+    amount:amt, paidBy:pickedPayer('#topPaidBy'), note:'' });
+  Store.save(); $('#topAmt').value=''; renderAll(); goHome();
+};
+// money: salary
+$('#saveSal').onclick = ()=>{
+  const amt = Number($('#salAmt').value);
+  const m = $('#salMonth').value || thisMonth();
+  if (!(amt>0)){ alert('Enter the salary amount.'); return; }
+  const existing = Store.data.salaries.find(s=>s.month===m);
+  if (existing){ if(!confirm('Salary for this month already recorded. Replace it?')) return;
+    existing.amount=amt; existing.paidBy=pickedPayer('#salPaidBy'); }
+  else Store.data.salaries.push({ id:Store.id(), month:m, amount:amt, paidBy:pickedPayer('#salPaidBy') });
+  Store.save(); $('#salAmt').value=''; renderAll();
+};
+
+// history filter
+$('#view-history').addEventListener('click',(e)=>{
+  const b = e.target.closest('[data-filter]'); if(!b) return;
+  $$('#view-history [data-filter]').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); histFilter=b.dataset.filter; renderHistory();
+});
+
+// settings: threshold
+$('#setThreshold').onchange = ()=>{ Store.data.settings.lowBalanceThreshold=Number($('#setThreshold').value)||0; Store.save(); renderHome(); };
+// settings: common items
+$('#addCommon').onclick = ()=>{
+  const v = $('#newItemName').value.trim(); if(!v) return;
+  if(!Store.data.commonItems.includes(v)) Store.data.commonItems.push(v);
+  $('#newItemName').value=''; Store.save(); renderItemEditor(); renderQuickChips();
+};
+$('#itemEditor').onclick = (e)=>{
+  const pill = e.target.closest('[data-i]'); if(!pill) return;
+  Store.data.commonItems.splice(Number(pill.dataset.i),1);
+  Store.save(); renderItemEditor(); renderQuickChips();
+};
+// notifications
+$('#enableNotif').onclick = async ()=>{
+  if (!('Notification' in window)){ alert('Notifications not supported on this browser.'); return; }
+  const p = await Notification.requestPermission();
+  alert(p==='granted' ? 'Notifications on. You\'ll be alerted when the balance runs low.' : 'Notifications were not enabled.');
+};
+function notify(title,body){
+  try{ if ('Notification' in window && Notification.permission==='granted') new Notification(title,{body, icon:'icon.svg'}); }catch(e){}
+}
+// backup
+$('#exportData').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(Store.data,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download = 'ghar-kharcha-backup-'+today()+'.json'; a.click();
+};
+$('#importData').onchange = (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{ try{ Store.data = JSON.parse(r.result); Store.save(); renderAll(); alert('Backup imported.'); }
+    catch(err){ alert('Could not read that file.'); } };
+  r.readAsText(f);
+};
+
+// user switching / login
+$('#switchUser').onclick = ()=>{ showLogin(); };
+function showLogin(){
+  $('#app').classList.add('hidden'); $('#login').classList.remove('hidden');
+  $('#loginPeople').innerHTML = Store.data.people.map(p=>
+    `<button class="btn sec" data-id="${p.id}" style="margin-top:10px;text-align:left">
+      <span class="${personClass(p.id)}">●</span> &nbsp;${p.name}
+      <span class="muted small">· ${p.role==='cook'?'logs shopping':'pays & manages'}</span></button>`).join('');
+}
+$('#loginPeople').onclick = (e)=>{
+  const b = e.target.closest('[data-id]'); if(!b) return;
+  currentUser = b.dataset.id; localStorage.setItem(USER_KEY,currentUser);
+  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  renderAll(); goHome();
+};
+function goHome(){ $('#nav button[data-view="home"]').click(); }
+
+/* ===================== BOOT ===================== */
+Store.load();
+if (currentUser && Store.data.people.some(p=>p.id===currentUser)){
+  $('#app').classList.remove('hidden'); renderAll(); resetShopForm();
+} else { showLogin(); }
+
+// register service worker
+if ('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
