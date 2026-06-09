@@ -1,6 +1,6 @@
 // Service worker — offline caching for the PWA.
 // Bump CACHE version whenever you change app files so clients update.
-const CACHE = 'ghar-kharcha-v3';
+const CACHE = 'ghar-kharcha-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -20,7 +20,6 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Network-first for navigations (so updates show), cache-first for other assets.
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
