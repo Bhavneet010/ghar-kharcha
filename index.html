@@ -3,73 +3,85 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#168a63" />
+<meta name="theme-color" content="#0b1320" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon.svg" />
 <title>Ghar Kharcha — Daily Expenses</title>
 <style>
   :root{
-    --bg:#0f1411; --card:#18211c; --card2:#1f2a23; --line:#2b372f;
-    --text:#eaf2ec; --muted:#9bb0a4; --accent:#21c08b; --accent2:#168a63;
-    --warn:#e0a800; --danger:#e5484d; --blue:#4c8dff;
-    --radius:16px;
+    --accent:#34e3b0; --accent2:#23b6c9; --accentInk:#06201a;
+    --text:#eaf3f0; --muted:#8fa3a1; --line:rgba(255,255,255,.12);
+    --glass:rgba(255,255,255,.07);
+    --danger:#ff6b6f; --warn:#f4c95d; --blue:#7cc4ff;
+    --radius:22px;
   }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
-  html,body{margin:0;padding:0}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{margin:0;padding:0;background:#080d16}
   body{
+    margin:0 auto;padding:0 0 94px;max-width:560px;min-height:100vh;color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
-    background:var(--bg); color:var(--text); padding-bottom:84px;
-    max-width:560px; margin:0 auto; min-height:100vh;
+    background:
+      radial-gradient(125% 70% at 88% -8%, #1f5048 0%, rgba(14,26,36,0) 46%),
+      radial-gradient(115% 60% at 0% 0%, #163242 0%, rgba(10,15,26,0) 52%),
+      linear-gradient(180deg,#0c1622 0%,#080d16 100%);
+    background-attachment:fixed;
   }
-  header{position:sticky; top:0; z-index:20; background:linear-gradient(180deg,#13201a,#0f1411);
-    padding:14px 16px 10px; border-bottom:1px solid var(--line)}
+  header{position:sticky;top:0;z-index:20;padding:16px 16px 12px;
+    background:rgba(10,16,24,.55);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-bottom:1px solid var(--line)}
   .brand{display:flex;align-items:center;gap:10px}
   .brand b{font-size:18px;letter-spacing:.2px}
   .whoami{margin-left:auto;font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
-  .whoami button{background:none;border:1px solid var(--line);color:var(--muted);
-    padding:4px 9px;border-radius:999px;font-size:12px}
+  .whoami button{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted);
+    padding:5px 11px;border-radius:999px;font-size:12px}
   main{padding:16px}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
-  .card h3{margin:0 0 10px;font-size:14px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.6px}
-  .balance{font-size:40px;font-weight:700;letter-spacing:-1px;line-height:1.1}
-  .balance.low{color:var(--danger)}
-  .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .card{background:var(--glass);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px;
+    box-shadow:0 10px 34px rgba(0,0,0,.28)}
+  .card h3{margin:0 0 12px;font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:1px}
+  .balance{font-size:44px;font-weight:800;letter-spacing:-1.5px;line-height:1.05;
+    background:linear-gradient(90deg,#5ef2c2,#36c8e4);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .balance.low{background:linear-gradient(90deg,#ff9295,#ff6b6f);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);font-size:13px;margin-top:6px}
   .row{display:flex;gap:10px;align-items:center}
   .row.between{justify-content:space-between}
-  .pill{display:inline-flex;align-items:center;gap:6px;background:var(--card2);border:1px solid var(--line);
-    border-radius:999px;padding:6px 12px;font-size:13px;margin:4px 6px 0 0;cursor:pointer}
-  .pill.active{background:var(--accent2);border-color:var(--accent);color:#fff}
-  .banner{border-radius:12px;padding:12px 14px;font-size:14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
-  .banner.warn{background:rgba(224,168,0,.13);border:1px solid rgba(224,168,0,.4);color:#f4d76b}
-  .banner.danger{background:rgba(229,72,77,.13);border:1px solid rgba(229,72,77,.4);color:#ff9b9e}
-  .banner.info{background:rgba(76,141,255,.12);border:1px solid rgba(76,141,255,.35);color:#a9c8ff}
-  label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}
-  input,select{width:100%;padding:12px;background:var(--card2);border:1px solid var(--line);
-    color:var(--text);border-radius:12px;font-size:16px}
-  input:focus,select:focus{outline:none;border-color:var(--accent)}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid var(--line);
+    border-radius:999px;padding:7px 13px;font-size:13px;margin:4px 6px 0 0;cursor:pointer;color:var(--text)}
+  .pill.active{background:linear-gradient(90deg,#34e3b0,#23b6c9);border-color:transparent;color:var(--accentInk);font-weight:700}
+  .banner{border-radius:16px;padding:13px 15px;font-size:14px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .banner.warn{background:rgba(244,201,93,.14);border:1px solid rgba(244,201,93,.4);color:#f7d98a}
+  .banner.danger{background:rgba(255,107,111,.14);border:1px solid rgba(255,107,111,.4);color:#ffa9ab}
+  .banner.info{background:rgba(52,227,176,.12);border:1px solid rgba(52,227,176,.3);color:#9af0d3}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+  input,select{width:100%;padding:13px;background:rgba(255,255,255,.05);border:1px solid var(--line);
+    color:var(--text);border-radius:14px;font-size:16px}
+  input::placeholder{color:rgba(255,255,255,.3)}
+  input:focus,select:focus{outline:none;border-color:var(--accent);background:rgba(255,255,255,.08)}
   button{cursor:pointer;font-family:inherit}
-  .btn{display:block;width:100%;padding:14px;background:var(--accent);color:#04150e;border:none;
-    border-radius:12px;font-size:16px;font-weight:700;margin-top:14px}
+  .btn{display:block;width:100%;padding:15px;border:none;border-radius:16px;font-size:16px;font-weight:700;margin-top:16px;
+    background:linear-gradient(90deg,#34e3b0,#23b6c9);color:var(--accentInk);box-shadow:0 8px 24px rgba(52,227,176,.22)}
   .btn:active{transform:translateY(1px)}
-  .btn:disabled{opacity:.55}
-  .btn.sec{background:var(--card2);color:var(--text);border:1px solid var(--line);font-weight:600}
-  .btn.danger{background:transparent;color:var(--danger);border:1px solid rgba(229,72,77,.4)}
-  .list-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .btn:disabled{opacity:.5}
+  .btn.sec{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--line);font-weight:600;box-shadow:none}
+  .btn.danger{background:transparent;color:var(--danger);border:1px solid rgba(255,107,111,.4);box-shadow:none}
+  .list-item{display:flex;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.07)}
   .list-item:last-child{border-bottom:none}
   .list-item .amt{margin-left:auto;font-weight:700;white-space:nowrap}
   .muted{color:var(--muted)} .small{font-size:12px}
-  .tag{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--card2);border:1px solid var(--line);color:var(--muted)}
+  .tag{font-size:11px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--muted)}
   .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
   .person-b{color:#7fd3ff} .person-r{color:#ff9ecb} .person-c{color:#ffd27f}
   nav{position:fixed;bottom:0;left:0;right:0;max-width:560px;margin:0 auto;display:flex;
-    background:#10180f;border-top:1px solid var(--line);padding:6px 4px env(safe-area-inset-bottom)}
+    background:rgba(10,16,24,.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border-top:1px solid var(--line);padding:8px 4px env(safe-area-inset-bottom)}
   nav button{flex:1;background:none;border:none;color:var(--muted);font-size:11px;padding:8px 2px;
-    display:flex;flex-direction:column;align-items:center;gap:3px}
+    display:flex;flex-direction:column;align-items:center;gap:4px}
   nav button.active{color:var(--accent)}
   nav svg{width:22px;height:22px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .stat{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px}
-  .stat .n{font-size:20px;font-weight:700;margin-top:2px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stat{background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:16px;padding:14px}
+  .stat .n{font-size:22px;font-weight:700;margin-top:3px}
   .item-line{display:flex;gap:8px;align-items:center;margin-bottom:8px}
   .item-line input.name{flex:2} .item-line input.amt{flex:1}
   .item-line button{background:none;border:none;color:var(--danger);font-size:20px;padding:0 6px}
@@ -415,12 +427,12 @@ function renderSyncBadge(){
   const b = $('#syncBadge'); const info = $('#syncInfo');
   if (USE_CLOUD){
     const ok = online;
-    b.innerHTML = `<span class="dot" style="background:${ok?'#21c08b':'#e0a800'}"></span>${ok?'Synced':'Offline'}`;
+    b.innerHTML = `<span class="dot" style="background:${ok?'#34e3b0':'#f4c95d'}"></span>${ok?'Synced':'Offline'}`;
     info.textContent = ok
       ? 'Live sync is on. Changes appear on all phones within a second.'
       : 'Cloud is unreachable right now — showing the last synced copy. It will catch up when back online.';
   } else {
-    b.innerHTML = `<span class="dot" style="background:#9bb0a4"></span>This phone`;
+    b.innerHTML = `<span class="dot" style="background:#8fa3a1"></span>This phone`;
     info.textContent = 'Sync not configured yet — data stays on this phone. Add your Supabase keys to share live across all three phones.';
   }
 }
