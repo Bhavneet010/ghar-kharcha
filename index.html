@@ -117,48 +117,36 @@
   <header>
     <div class="brand"><span class="logo">₹</span><b>Ghar Kharcha</b></div>
     <div class="whoami">
-      <span id="syncBadge" class="tag"></span>
+      <span id="syncBadge"></span>
       <button class="iconbtn" id="themeToggle" aria-label="Toggle light or dark theme"></button>
-      <span id="whoLabel"></span>
-      <button class="switch" id="switchUser">switch</button>
+      <button class="switch" id="switchUser"><span id="whoLabel"></span></button>
     </div>
   </header>
   <main>
     <!-- HOME -->
     <section id="view-home">
       <div id="alertSlot"></div>
-      <div class="card">
-        <h3>Cook's balance (advance left)</h3>
-        <div id="balanceVal" class="balance">₹0</div>
-        <div class="sub" id="balanceSub">No advance recorded yet</div>
-      </div>
 
       <div class="card">
-        <h3>Who has paid — settle up</h3>
-        <div id="ledgerBox"></div>
-      </div>
-
-      <div class="card">
-        <h3>This month so far</h3>
-        <div class="grid2">
-          <div class="stat"><div class="muted small">Grocery spend</div><div class="n" id="mGroc">₹0</div></div>
-          <div class="stat"><div class="muted small">Salary paid</div><div class="n" id="mSal">₹0</div></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px">
+          <div>
+            <h3 style="margin-bottom:8px">Cook's balance</h3>
+            <div id="balanceVal" class="balance">₹0</div>
+            <div class="sub" id="balanceSub">No advance recorded yet</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <h3 style="margin-bottom:8px">This month</h3>
+            <div id="mGroc" style="font-size:26px;font-weight:700;letter-spacing:-.5px">₹0</div>
+            <div class="muted small">grocery spend</div>
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <h3>Recent shopping</h3>
-        <div id="recentList"></div>
-      </div>
-    </section>
-
-    <!-- SHOP -->
-    <section id="view-shop" class="hidden">
-      <div class="card">
-        <h3>Log today's shopping</h3>
+        <h3>Add expenses</h3>
         <label>Date</label>
         <input type="date" id="shopDate" />
-        <label>Tap items bought (quick add)</label>
+        <label>Quick add</label>
         <div id="quickChips"></div>
         <label style="margin-top:14px">Items &amp; amounts</label>
         <div id="itemLines"></div>
@@ -169,12 +157,22 @@
           <span class="muted">Total</span>
           <span id="shopTotal" style="font-size:22px;font-weight:700">₹0</span>
         </div>
-        <button class="btn" id="saveShop">Save shopping</button>
+        <button class="btn" id="saveShop">Save expenses</button>
+      </div>
+
+      <div class="card">
+        <h3>Recent shopping</h3>
+        <div id="recentList"></div>
       </div>
     </section>
 
     <!-- MONEY -->
     <section id="view-money" class="hidden">
+      <div class="card">
+        <h3>Who has paid — settle up</h3>
+        <div id="ledgerBox"></div>
+      </div>
+
       <div class="card">
         <h3>Give advance to cook</h3>
         <label>Amount</label>
@@ -248,8 +246,6 @@
   <nav id="nav">
     <button data-view="home" class="active">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</button>
-    <button data-view="shop">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6h15l-1.5 9h-12z"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M6 6L5 3H2"/></svg>Shop</button>
     <button data-view="money">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>Money</button>
     <button data-view="history">
@@ -412,12 +408,14 @@ function renderSyncBadge(){
   const b = $('#syncBadge'); const info = $('#syncInfo');
   if (USE_CLOUD){
     const ok = online;
-    b.innerHTML = `<span class="dot" style="background:${ok?'var(--accent)':'var(--warn)'}"></span>${ok?'Synced':'Offline'}`;
+    b.innerHTML = `<span class="dot" style="background:${ok?'var(--accent)':'var(--warn)'}"></span>`;
+    b.title = ok ? 'Synced' : 'Offline';
     info.textContent = ok
       ? 'Live sync is on. Changes appear on all phones within a second.'
       : 'Cloud is unreachable right now — showing the last synced copy. It will catch up when back online.';
   } else {
-    b.innerHTML = `<span class="dot" style="background:var(--muted)"></span>This phone`;
+    b.innerHTML = `<span class="dot" style="background:var(--muted)"></span>`;
+    b.title = 'Local only';
     info.textContent = 'Sync not configured yet — data stays on this phone. Add your Supabase keys to share live across all three phones.';
   }
 }
@@ -455,7 +453,7 @@ function renderHome(){
   $('#ledgerBox').innerHTML = html;
 
   const mt = monthTotals();
-  $('#mGroc').textContent = fmt(mt.groc); $('#mSal').textContent = fmt(mt.sal);
+  $('#mGroc').textContent = fmt(mt.groc);
 
   const recent = [...Store.data.expenses].sort((x,y)=>(y.date+'').localeCompare(x.date+'')).slice(0,5);
   $('#recentList').innerHTML = recent.length
@@ -552,7 +550,6 @@ $$('#nav button').forEach(b=>b.onclick=()=>{
   $$('#nav button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
   $$('main > section').forEach(s=>s.classList.add('hidden'));
   $('#view-'+b.dataset.view).classList.remove('hidden');
-  if (b.dataset.view==='shop') resetShopForm();
   window.scrollTo(0,0);
 });
 function resetShopForm(){
@@ -577,7 +574,7 @@ $('#saveShop').onclick = ()=> runOp(async ()=>{
   await opAddExpense({ date:$('#shopDate').value||today(), items, total, loggedBy:currentUser, note:$('#shopNote').value.trim() });
   const after = before - total, thr = Store.data.settings.lowBalanceThreshold;
   if (after < thr && before >= thr) notify('Balance low', `Only ${fmt(after)} left with the cook.`);
-  renderAll(); goHome();
+  renderAll(); resetShopForm(); goHome();
 });
 
 $('#saveTop').onclick = ()=> runOp(async ()=>{
