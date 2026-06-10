@@ -35,8 +35,9 @@
   body{margin:0 auto;padding:0 0 100px;max-width:540px;min-height:100vh;color:var(--text);background:var(--bg);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;line-height:1.45}
-  header{position:sticky;top:0;z-index:20;padding:10px 16px 8px;background:var(--hero-bg);display:flex;align-items:center;justify-content:space-between;gap:8px}
-  .brand{display:flex;align-items:center;gap:8px}
+  header{position:sticky;top:0;z-index:20;padding:10px 16px 8px;background:var(--hero-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;overflow:hidden}
+  .brand{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
+  .brand-text{min-width:0;overflow:hidden}
   .brand b{font-size:16px;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
   .logo{width:26px;height:26px;border-radius:7px;background:var(--accent);color:var(--accent-ink);
     display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
@@ -98,8 +99,8 @@
   .seg{display:flex;gap:8px;margin-top:6px}
   .seg .pill{margin:0;flex:1;justify-content:center}
   /* ── redesigned home ── */
-  .brand-sub{font-size:10px;color:var(--muted);margin-top:1px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .user-block{display:flex;align-items:center;gap:6px;flex-shrink:0}
+  .brand-sub{font-size:10px;color:var(--muted);margin-top:1px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .user-block{display:flex;align-items:center;gap:8px;flex-shrink:0}
   .user-meta{text-align:right}
   .user-name-lbl{font-size:12px;font-weight:600;color:var(--text);line-height:1.3}
   .greeting-lbl{font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap}
@@ -197,7 +198,7 @@
   <header>
     <div class="brand">
       <span class="logo">₹</span>
-      <div>
+      <div class="brand-text">
         <b>Ghar Kharcha</b>
         <div class="brand-sub">Smart way to manage your home expenses</div>
       </div>
@@ -208,8 +209,6 @@
         <div class="greeting-lbl" id="greetingLabel">Good morning! ☀️</div>
       </div>
       <button class="avatar" id="switchUser" aria-label="Switch user"></button>
-      <span id="syncBadge"></span>
-      <button class="iconbtn" id="themeToggle" aria-label="Toggle theme"></button>
     </div>
   </header>
   <main>
@@ -331,7 +330,14 @@
     <!-- SETTINGS -->
     <section id="view-settings" class="hidden">
       <div class="card">
-        <h3>Sync</h3>
+        <h3>Appearance</h3>
+        <div class="row between">
+          <span>Dark mode</span>
+          <button class="iconbtn" id="themeToggle" aria-label="Toggle theme"></button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Sync <span id="syncBadge"></span></h3>
         <div id="syncInfo" class="muted small"></div>
       </div>
       <div class="card">
