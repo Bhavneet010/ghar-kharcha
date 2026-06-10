@@ -145,7 +145,7 @@
   .date-overlay{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;
     padding:0;font-family:inherit}
   .date-overlay::-webkit-calendar-picker-indicator{width:100%;height:100%;margin:0;padding:0}
-  .qa-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+  .qa-card{background:var(--qa-bg);border:1px solid var(--qa-line);border-radius:13px;
     padding:8px 10px 6px;margin-bottom:10px}
   .items-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;
     padding:8px;margin-top:6px}
@@ -215,12 +215,18 @@
     --text:#161d2b; --muted:#6e7580; --line:#e9ece7;
     --accent:#188a4c; --accent-strong:#138344; --accent-soft:#f1f8f3;
     --danger:#d75752; --shadow:0 12px 28px rgba(16,24,40,.08);
+    --qa-bg:#f3f6fb; --qa-line:#dee6f3;
+    --exp-bg:#fdf6ec; --exp-line:#f1e3cd;
+    --recent-bg:#f6f2fa; --recent-line:#e7defa;
   }
   [data-theme="dark"]{
     --bg:#111713; --surface:#18201b; --inset:#222923;
     --text:#eef4ef; --muted:#a4afa8; --line:rgba(255,255,255,.1);
     --accent:#2bd17e; --accent-strong:#31da84; --accent-soft:#16251b;
     --shadow:none;
+    --qa-bg:#161e2a; --qa-line:#26334a;
+    --exp-bg:#241e15; --exp-line:#3a2f1e;
+    --recent-bg:#1e1826; --recent-line:#352a45;
   }
   body{max-width:430px;padding-bottom:86px}
   header{position:relative;padding:18px 22px 15px;background:var(--bg)}
@@ -262,7 +268,7 @@
   .date-chip .cal-ic{width:20px;height:20px}
   .date-chip .chev{width:16px;height:16px;color:#111827}
   .date-chip #dateLabel{font-size:16px;font-weight:760;color:var(--text)}
-  .qa-card{border-radius:19px;padding:17px 13px 12px;margin-bottom:28px;border-color:#edf0eb;
+  .qa-card{border-radius:19px;padding:17px 13px 12px;margin-bottom:28px;border-color:var(--qa-line);
     box-shadow:0 12px 24px rgba(18,46,28,.08)}
   .sec-row{margin:0 2px 12px}
   .sec-lbl{font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
@@ -291,13 +297,13 @@
   .note-wrap input{border-color:#e8ece8;border-radius:16px;min-height:58px;padding:14px 50px 14px 15px;
     font-size:18px;background:var(--surface)}
   .note-leaf{font-size:25px;right:18px}
-  .total-card{border:none;background:#f7faf6;border-radius:18px;min-height:79px;padding:18px 23px;margin:17px 0}
+  .total-card{border:none;background:var(--accent-soft);border-radius:18px;min-height:79px;padding:18px 23px;margin:17px 0}
   .tl{font-size:21px;font-weight:850}
   .ta{font-size:31px;font-weight:850;color:var(--accent)}
   .save-btn-new{min-height:68px;border-radius:16px;font-size:22px;font-weight:800;background:var(--accent);
     box-shadow:0 9px 18px rgba(24,138,76,.3);gap:14px}
   .save-btn-new svg{width:28px;height:28px}
-  .recent-section{background:var(--surface);border:1px solid #eef0ed;border-radius:20px;margin-top:18px;
+  .recent-section{background:var(--recent-bg);border:1px solid var(--recent-line);border-radius:20px;margin-top:18px;
     padding:14px 18px;box-shadow:0 10px 22px rgba(16,24,40,.06)}
   .empty-recent{padding:0;gap:18px}
   .er-icon{width:92px;height:65px;border-radius:0;background:transparent;color:var(--accent)}
@@ -348,7 +354,7 @@
   .qchip .ci{font-size:19px}
   .qchip-more{width:38px;height:38px;font-size:27px}
   .sec-lbl{font-size:19px}
-  .expense-card{background:var(--surface);border:1px solid #edf0ed;border-radius:20px;
+  .expense-card{background:var(--exp-bg);border:1px solid var(--exp-line);border-radius:20px;
     padding:0 0 15px;margin-top:12px;box-shadow:0 12px 24px rgba(16,24,40,.06)}
   .items-card{border:none;border-radius:20px 20px 0 0;box-shadow:none;margin:0;padding:0}
   .irow{min-height:54px;border-radius:16px;padding:6px 10px}
