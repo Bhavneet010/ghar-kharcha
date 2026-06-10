@@ -3,22 +3,22 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#f4f6f8" />
+<meta name="theme-color" content="#f7f5ef" />
 <script>(function(){try{var t=localStorage.getItem('ghk_theme')||((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon.svg" />
 <title>Ghar Kharcha — Daily Expenses</title>
 <style>
   :root{
-    --bg:#f4f6f8; --surface:#ffffff; --inset:#f1f3f6;
-    --text:#1b2330; --muted:#69737f; --line:#e8ebef;
-    --accent:#0ea371; --accent-ink:#ffffff;
-    --danger:#d8534a; --warn:#b3781a;
-    --danger-bg:#fdecea; --warn-bg:#fbf2dd; --info-bg:#e6f4ee;
+    --bg:#f7f5ef; --surface:#ffffff; --inset:#f3f1ea;
+    --text:#1b2330; --muted:#69737f; --line:#e7e4da;
+    --accent:#1f8a4f; --accent-ink:#ffffff;
+    --danger:#d8534a; --warn:#c98a2a;
+    --danger-bg:#fdecea; --warn-bg:#fbf2dd; --info-bg:#e8f4ec;
     --p-b:#2f7fd1; --p-r:#c43d77; --p-c:#a86c12;
     --shadow:0 1px 2px rgba(16,24,40,.04),0 10px 28px rgba(16,24,40,.05);
     --radius:20px;
-    --hero-bg:#ebf9f3; --hero-border:#b8e4cc;
+    --hero-grad:linear-gradient(135deg,#46a35e 0%,#1e7a44 100%);
   }
   [data-theme="dark"]{
     --bg:#0f141b; --surface:#161d27; --inset:#1c2530;
@@ -28,19 +28,20 @@
     --danger-bg:rgba(255,113,116,.14); --warn-bg:rgba(240,196,77,.14); --info-bg:rgba(45,212,167,.14);
     --p-b:#7fd3ff; --p-r:#ff9ecb; --p-c:#ffd27f;
     --shadow:none;
-    --hero-bg:#0d1f16; --hero-border:#1c3a28;
+    --hero-grad:linear-gradient(135deg,#1c5e34 0%,#0e3d20 100%);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html{margin:0;padding:0;background:var(--bg)}
   body{margin:0 auto;padding:0 0 100px;max-width:540px;min-height:100vh;color:var(--text);background:var(--bg);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;line-height:1.45}
-  header{position:sticky;top:0;z-index:20;padding:8px 16px 6px;background:var(--hero-bg);display:flex;align-items:center;justify-content:space-between;gap:8px;overflow:hidden}
-  .brand{display:flex;align-items:center;gap:7px;min-width:0;flex:1 1 auto}
+  header{position:sticky;top:0;z-index:20;padding:10px 16px 8px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;overflow:hidden}
+  .brand{display:flex;align-items:center;gap:9px;min-width:0;flex:1 1 auto}
   .brand-text{min-width:0;overflow:hidden}
-  .brand b{font-size:15px;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
-  .logo{width:24px;height:24px;border-radius:7px;background:var(--accent);color:var(--accent-ink);
-    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+  .brand b{font-size:16px;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
+  .logo{width:34px;height:34px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;
+    border:2px solid var(--surface);box-shadow:0 0 0 1.5px var(--accent);flex-shrink:0}
   .whoami{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted)}
   .iconbtn{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--surface);
     color:var(--muted);display:flex;align-items:center;justify-content:center;padding:0}
@@ -82,10 +83,14 @@
   .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
   .person-b{color:var(--p-b)} .person-r{color:var(--p-r)} .person-c{color:var(--p-c)}
   nav{position:fixed;bottom:0;left:0;right:0;max-width:540px;margin:0 auto;display:flex;
-    background:var(--surface);border-top:1px solid var(--line);padding:9px 4px env(safe-area-inset-bottom)}
+    background:var(--surface);border-radius:20px 20px 0 0;
+    box-shadow:0 -4px 24px rgba(16,24,40,.10);
+    padding:10px 4px calc(env(safe-area-inset-bottom) + 2px)}
   nav button{flex:1;background:none;border:none;color:var(--muted);font-size:11px;padding:8px 2px;
-    display:flex;flex-direction:column;align-items:center;gap:5px}
-  nav button.active{color:var(--accent)}
+    display:flex;flex-direction:column;align-items:center;gap:5px;position:relative}
+  nav button.active{color:var(--accent);font-weight:600}
+  nav button.active::before{content:"";position:absolute;top:-10px;left:50%;
+    transform:translateX(-50%);width:36px;height:4px;border-radius:99px;background:var(--accent)}
   nav svg{width:23px;height:23px}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .stat{background:var(--inset);border-radius:14px;padding:16px}
@@ -99,82 +104,96 @@
   .seg{display:flex;gap:8px;margin-top:6px}
   .seg .pill{margin:0;flex:1;justify-content:center}
   /* ── redesigned home ── */
-  .brand-sub{font-size:9px;color:var(--muted);margin-top:1px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-  .user-block{display:flex;align-items:center;gap:7px;flex-shrink:0}
+  .brand-sub{font-size:10px;color:var(--muted);margin-top:1px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .user-block{display:flex;align-items:center;gap:8px;flex-shrink:0}
   .user-meta{text-align:right}
-  .user-name-lbl{font-size:11px;font-weight:600;color:var(--text);line-height:1.3}
-  .greeting-lbl{font-size:9px;color:var(--muted);margin-top:1px;white-space:nowrap}
-  .avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);
+  .user-name-lbl{font-size:12px;font-weight:700;color:var(--text);line-height:1.3}
+  .greeting-lbl{font-size:10px;color:var(--warn);margin-top:1px;white-space:nowrap;font-weight:500}
+  .avatar{width:34px;height:34px;border-radius:50%;background:var(--accent);
     color:var(--accent-ink);display:flex;align-items:center;justify-content:center;
-    font-size:13px;font-weight:700;flex-shrink:0;border:none;cursor:pointer;padding:0;
-    font-family:inherit}
-  .home-hero-stats{background:var(--hero-bg);display:grid;grid-template-columns:1fr 1fr;
-    gap:8px;padding:2px 16px 8px;margin:-6px -16px 0}
-  .stat-mini{background:var(--surface);border:1px solid var(--hero-border);
-    border-radius:12px;padding:9px 11px}
-  .smc-label{font-size:9px;color:var(--muted);font-weight:600;letter-spacing:.3px;
-    text-transform:uppercase;margin-bottom:4px}
-  .smc-amount{font-size:19px;font-weight:700;letter-spacing:-.5px;color:var(--text)}
+    font-size:14px;font-weight:700;flex-shrink:0;cursor:pointer;padding:0;
+    font-family:inherit;border:2px solid var(--surface);box-shadow:0 0 0 1.5px var(--accent)}
+  .hero-panel{background:var(--hero-grad);border-radius:18px;padding:12px 12px;
+    display:flex;gap:10px;align-items:center;margin:4px 0 14px;
+    box-shadow:0 8px 22px rgba(30,122,68,.22)}
+  .hero-illu{width:74px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .hero-illu svg{width:72px;height:72px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.18))}
+  .hero-cards{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0}
+  .stat-mini{background:var(--surface);border-radius:14px;padding:10px 11px;
+    box-shadow:0 2px 10px rgba(0,0,0,.10);min-width:0}
+  .smc-label{font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.3px;
+    text-transform:uppercase;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .smc-amount{font-size:21px;font-weight:700;letter-spacing:-.5px;color:var(--text)}
   .smc-amount.low{color:var(--danger)}
-  .smc-sub{font-size:10px;color:var(--muted);margin-top:3px}
+  .smc-sub{font-size:9px;color:var(--muted);margin-top:3px;line-height:1.3}
   .smc-link{font-size:10px;color:var(--accent);background:none;border:none;padding:0;
-    cursor:pointer;font-weight:600;margin-top:4px;display:inline-block;font-family:inherit}
-  .home-form-card{background:var(--surface);border-radius:18px 18px 0 0;
-    padding:13px 14px 18px;margin:-4px -16px 0;box-shadow:0 -2px 16px rgba(0,0,0,.06)}
-  .form-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .form-card-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700}
-  .smart-add-btn{display:flex;align-items:center;gap:5px;background:none;
+    cursor:pointer;font-weight:600;margin-top:3px;display:inline-block;font-family:inherit}
+  .home-form-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;
+    padding:14px 14px 16px;margin:0 0 16px;box-shadow:var(--shadow)}
+  .form-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .form-card-title{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:700;letter-spacing:-.2px}
+  .title-check{width:28px;height:28px;border-radius:50%;background:var(--accent);
+    color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .title-check svg{width:15px;height:15px}
+  .smart-add-btn{display:flex;align-items:center;gap:5px;background:var(--info-bg);
     border:1.5px solid var(--accent);color:var(--accent);border-radius:20px;
-    padding:6px 12px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
-  .date-chip{display:flex;align-items:center;background:var(--inset);
-    border:1px solid var(--hero-border);border-radius:10px;padding:7px 11px;margin-top:4px}
-  .date-chip-input{border:none;background:transparent;color:var(--text);font-size:13px;
-    font-weight:500;padding:0;font-family:inherit;outline:none;flex:1;width:100%}
+    padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}
+  .dq-grid{display:grid;grid-template-columns:122px 1fr;gap:12px;align-items:start;margin-top:2px}
+  .date-chip{display:flex;align-items:center;gap:6px;background:var(--surface);
+    border:1px solid var(--line);border-radius:11px;padding:8px 10px;margin-top:6px}
+  .date-chip .cal{font-size:14px;line-height:1;flex-shrink:0}
+  .date-chip-input{border:none;background:transparent;color:var(--text);font-size:12px;
+    font-weight:600;padding:0;font-family:inherit;outline:none;flex:1;width:100%;min-width:0}
   .date-chip-input::-webkit-calendar-picker-indicator{cursor:pointer;opacity:.6}
-  .quick-chips-row{display:flex;gap:6px;overflow-x:auto;padding:6px 0 4px;
+  .quick-chips-row{display:flex;gap:6px;overflow-x:auto;padding:6px 0 2px;
     scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .quick-chips-row::-webkit-scrollbar{display:none}
-  .qchip{display:inline-flex;align-items:center;gap:5px;background:var(--inset);border:none;
-    border-radius:18px;padding:6px 11px;font-size:12px;white-space:nowrap;cursor:pointer;
-    color:var(--text);flex-shrink:0;font-family:inherit}
+  .quick-chips-row.wrap{flex-wrap:wrap;overflow:visible}
+  .qchip{display:inline-flex;align-items:center;gap:5px;background:var(--surface);
+    border:1px solid var(--line);border-radius:18px;padding:6px 11px;font-size:12px;
+    font-weight:500;white-space:nowrap;cursor:pointer;color:var(--text);flex-shrink:0;font-family:inherit}
   .qchip .ci{font-size:15px;line-height:1}
-  .qchip-more{width:32px;height:32px;border-radius:50%;background:var(--inset);
+  .qchip-more{width:31px;height:31px;border-radius:50%;background:var(--surface);
     border:1px solid var(--line);font-size:18px;color:var(--muted);cursor:pointer;
     flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit}
-  .irow{display:flex;align-items:center;gap:8px;background:var(--inset);
-    border-radius:11px;padding:7px 10px;margin-bottom:5px}
-  .irow .ii{font-size:19px;width:24px;text-align:center;flex-shrink:0;line-height:1}
-  .irow .in{flex:1;background:none;border:none;font-size:13px;color:var(--text);
+  .irow{display:flex;align-items:center;gap:8px;background:var(--surface);
+    border:1px solid var(--line);border-radius:13px;padding:7px 8px;margin-bottom:7px}
+  .irow .ii{font-size:16px;width:32px;height:32px;flex-shrink:0;line-height:1;
+    background:var(--inset);border-radius:9px;display:flex;align-items:center;justify-content:center}
+  .irow .in{flex:1;background:none;border:none;font-size:13px;font-weight:500;color:var(--text);
     padding:0;font-family:inherit;outline:none;min-width:0}
   .irow .in::placeholder{color:var(--muted);opacity:.7}
-  .irow .ir{color:var(--muted);font-size:13px;flex-shrink:0}
-  .irow .ia{width:50px;background:none;border:none;font-size:13px;font-weight:600;
+  .amt-box{display:flex;align-items:center;gap:3px;background:var(--inset);
+    border:1px solid var(--line);border-radius:9px;padding:6px 8px;flex-shrink:0}
+  .amt-box .ir{color:var(--muted);font-size:12px;flex-shrink:0}
+  .amt-box .ia{width:42px;background:none;border:none;font-size:13px;font-weight:600;
     color:var(--text);padding:0;text-align:right;font-family:inherit;outline:none}
-  .irow .ia::placeholder{color:var(--muted);opacity:.7;font-weight:400}
+  .amt-box .ia::placeholder{color:var(--muted);opacity:.7;font-weight:400}
   .irow .idel{background:none;border:none;color:var(--danger);padding:4px;
-    display:flex;align-items:center;cursor:pointer;flex-shrink:0;opacity:.75}
-  .add-item-dashed{width:100%;background:none;border:1.5px dashed var(--line);
-    border-radius:11px;padding:9px;color:var(--accent);font-size:13px;font-weight:500;
-    cursor:pointer;margin-top:2px;font-family:inherit}
-  .note-wrap{position:relative;margin-top:5px}
+    display:flex;align-items:center;cursor:pointer;flex-shrink:0;opacity:.8}
+  .add-item-dashed{width:100%;background:none;border:1.5px dashed var(--accent);
+    border-radius:12px;padding:10px;color:var(--accent);font-size:13px;font-weight:600;
+    cursor:pointer;margin-top:2px;font-family:inherit;opacity:.9}
+  .note-wrap{position:relative;margin-top:6px}
+  .note-wrap input{background:var(--surface);border:1px solid var(--line)}
   .note-leaf{position:absolute;right:14px;top:50%;transform:translateY(-50%);
-    font-size:17px;pointer-events:none}
+    font-size:16px;pointer-events:none}
   .total-row-new{display:flex;justify-content:space-between;align-items:center;
-    padding:8px 0;border-top:1px solid var(--line);margin-top:4px}
-  .tl{font-size:13px;color:var(--muted);font-weight:500}
-  .ta{font-size:19px;font-weight:700;letter-spacing:-.5px}
+    background:var(--info-bg);border-radius:12px;padding:12px 14px;margin:12px 0}
+  .tl{font-size:13px;color:var(--text);font-weight:600}
+  .ta{font-size:19px;font-weight:700;letter-spacing:-.5px;color:var(--accent)}
   .save-btn-new{display:flex;align-items:center;justify-content:center;gap:8px;
     width:100%;background:var(--accent);color:var(--accent-ink);border:none;
-    border-radius:13px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;
-    font-family:inherit}
+    border-radius:14px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;
+    font-family:inherit;box-shadow:0 6px 16px rgba(31,138,79,.28)}
   .save-btn-new:active{transform:translateY(1px)}
   .save-btn-new:disabled{opacity:.5}
-  .sec-row{display:flex;align-items:center;justify-content:space-between;margin:9px 0 0}
+  .sec-row{display:flex;align-items:center;justify-content:space-between;margin:12px 0 0}
   .sec-lbl{font-size:12px;font-weight:600;color:var(--text)}
   .link-btn{background:none;border:none;font-size:11px;color:var(--accent);
     font-weight:600;padding:0;cursor:pointer;font-family:inherit}
   .link-btn.danger{color:var(--danger)}
-  .recent-section{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+  .recent-section{border-top:1px solid var(--line);margin-top:14px;padding-top:10px}
   .recent-section h3{margin:0 0 8px;font-size:12px;color:var(--muted);font-weight:600}
 </style>
 </head>
@@ -214,18 +233,36 @@
   <main>
     <!-- HOME -->
     <section id="view-home">
-      <!-- Hero stats on green background -->
-      <div class="home-hero-stats">
-        <div class="stat-mini">
-          <div class="smc-label">Cook's Balance</div>
-          <div id="balanceVal" class="smc-amount">₹0</div>
-          <div class="smc-sub" id="balanceSub">No advance recorded yet</div>
-          <button class="smc-link" id="addMoneyLink">Add money</button>
+      <!-- Hero: green gradient panel with grocery bag + stat cards -->
+      <div class="hero-panel">
+        <div class="hero-illu" aria-hidden="true">
+          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="25" cy="27" r="10" fill="#8bc34a"/>
+            <circle cx="21" cy="23" r="5" fill="#a5d36c"/>
+            <circle cx="30" cy="22" r="5" fill="#7cb342"/>
+            <ellipse cx="46" cy="21" rx="6" ry="12" transform="rotate(24 46 21)" fill="#f0b952"/>
+            <ellipse cx="46" cy="17" rx="4" ry="7" transform="rotate(24 46 17)" fill="#f7d08a"/>
+            <ellipse cx="58" cy="28" rx="4.5" ry="10" transform="rotate(-18 58 28)" fill="#e8734a"/>
+            <path d="M60 17l3-5M62 19l5-3" stroke="#5a9e3d" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M17 31h46l-4.4 40.2c-.3 2.7-2.5 4.8-5.2 4.8H26.6c-2.7 0-4.9-2.1-5.2-4.8L17 31z" fill="#2e7d46"/>
+            <path d="M17 31h46l-1 9.5H18L17 31z" fill="#246338"/>
+            <path d="M30 31c0-7.5 4.3-12 10-12s10 4.5 10 12" stroke="#1c5530" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+            <circle cx="53" cy="58" r="12.5" fill="#ffd54f" stroke="#e0a317" stroke-width="2.5"/>
+            <text x="53" y="63.5" text-anchor="middle" font-size="15" font-weight="700" fill="#8c6400" font-family="system-ui,sans-serif">₹</text>
+          </svg>
         </div>
-        <div class="stat-mini">
-          <div class="smc-label">This Month</div>
-          <div id="mGroc" class="smc-amount">₹0</div>
-          <div class="smc-sub">Grocery spend</div>
+        <div class="hero-cards">
+          <div class="stat-mini">
+            <div class="smc-label">Cook's Balance</div>
+            <div id="balanceVal" class="smc-amount">₹0</div>
+            <div class="smc-sub" id="balanceSub">No advance recorded yet</div>
+            <button class="smc-link" id="addMoneyLink">Add money</button>
+          </div>
+          <div class="stat-mini">
+            <div class="smc-label">This Month</div>
+            <div id="mGroc" class="smc-amount">₹0</div>
+            <div class="smc-sub">Grocery spend</div>
+          </div>
         </div>
       </div>
 
@@ -234,22 +271,28 @@
         <div id="alertSlot" style="margin-bottom:4px"></div>
         <div class="form-card-hdr">
           <div class="form-card-title">
-            <span style="font-size:18px">🥦</span>
+            <span class="title-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
             Add Grocery Expenses
           </div>
           <button class="smart-add-btn" id="smartAddBtn">✨ Smart Add</button>
         </div>
 
-        <div class="sec-lbl">Date</div>
-        <div class="date-chip">
-          <input type="date" id="shopDate" class="date-chip-input" />
+        <div class="dq-grid">
+          <div>
+            <div class="sec-lbl">Date</div>
+            <div class="date-chip">
+              <span class="cal">📅</span>
+              <input type="date" id="shopDate" class="date-chip-input" />
+            </div>
+          </div>
+          <div style="min-width:0">
+            <div class="sec-row" style="margin:0">
+              <span class="sec-lbl">Quick Add</span>
+              <button class="link-btn" id="seeAllChips">See all</button>
+            </div>
+            <div id="quickChips" class="quick-chips-row"></div>
+          </div>
         </div>
-
-        <div class="sec-row">
-          <span class="sec-lbl">Quick Add</span>
-          <button class="link-btn" id="seeAllChips">See all</button>
-        </div>
-        <div id="quickChips" class="quick-chips-row"></div>
 
         <div class="sec-row">
           <span class="sec-lbl">Items &amp; Amounts</span>
@@ -258,7 +301,7 @@
         <div id="itemLines" style="margin-top:8px"></div>
         <button class="add-item-dashed" id="addItemLine">+ Add another item</button>
 
-        <div class="sec-lbl" style="margin:9px 0 0">Note (optional)</div>
+        <div class="sec-lbl" style="margin:12px 0 0">Note (optional)</div>
         <div class="note-wrap">
           <input id="shopNote" placeholder="e.g. items for guests, weekend stock up, etc." style="padding:9px 36px 9px 11px;font-size:13px;border-radius:11px" />
           <span class="note-leaf">🌿</span>
@@ -270,7 +313,7 @@
         </div>
 
         <button class="save-btn-new" id="saveShop">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
           Save Expenses
         </button>
 
@@ -637,7 +680,8 @@ let shopItems = [];
 let chipsExpanded = false;
 function renderQuickChips(){
   const box=$('#quickChips'); if(!box) return;
-  const items = chipsExpanded ? Store.data.commonItems : Store.data.commonItems.slice(0,4);
+  box.classList.toggle('wrap', chipsExpanded);
+  const items = chipsExpanded ? Store.data.commonItems : Store.data.commonItems.slice(0,3);
   const seeBtn=$('#seeAllChips');
   if(seeBtn) seeBtn.textContent = chipsExpanded ? 'Show less' : 'See all';
   box.innerHTML = items.map(n=>
@@ -654,8 +698,8 @@ function renderItemLines(){
     const div = document.createElement('div'); div.className='irow';
     div.innerHTML = `<span class="ii">${itemEmoji(it.name)}</span>
       <input class="in" placeholder="Item name" value="${(it.name||'').replace(/"/g,'&quot;')}">
-      <span class="ir">₹</span>
-      <input class="ia" inputmode="numeric" placeholder="0" value="${it.amount||''}">
+      <span class="amt-box"><span class="ir">₹</span>
+      <input class="ia" inputmode="numeric" placeholder="0" value="${it.amount||''}"></span>
       <button class="idel" title="remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>`;
     const [icon,nm,am,rm]=[div.querySelector('.ii'),div.querySelector('.in'),div.querySelector('.ia'),div.querySelector('.idel')];
     nm.oninput=()=>{ it.name=nm.value; icon.textContent=itemEmoji(it.name); };
@@ -820,7 +864,7 @@ function currentTheme(){ return document.documentElement.getAttribute('data-them
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
   try{ localStorage.setItem('ghk_theme', t); }catch(e){}
-  const m = document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='dark' ? '#0f141b' : '#f4f6f8');
+  const m = document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='dark' ? '#0f141b' : '#f7f5ef');
   const btn = $('#themeToggle'); if(btn) btn.innerHTML = t==='dark' ? sunSVG : moonSVG;
 }
 $('#themeToggle').onclick = ()=> applyTheme(currentTheme()==='dark' ? 'light' : 'dark');
@@ -838,7 +882,7 @@ $('#loginPeople').onclick = (e)=>{
   const b = e.target.closest('[data-id]'); if(!b) return;
   currentUser = b.dataset.id; localStorage.setItem(USER_KEY,currentUser);
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
-  renderAll(); goHome();
+  renderAll(); resetShopForm(); goHome();
 };
 function goHome(){ $('#nav button[data-view="home"]').click(); }
 
