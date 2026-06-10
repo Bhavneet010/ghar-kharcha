@@ -35,7 +35,7 @@
   body{margin:0 auto;padding:0 0 84px;max-width:540px;min-height:100vh;color:var(--text);background:var(--bg);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;line-height:1.45}
-  header{position:sticky;top:0;z-index:20;padding:8px 12px 6px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;overflow:hidden}
+  header{position:sticky;top:0;z-index:20;padding:8px 12px 6px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px}
   .brand{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
   .brand b{font-size:18px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
   .logo{width:31px;height:31px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
@@ -103,10 +103,20 @@
   .seg{display:flex;gap:8px;margin-top:6px}
   .seg .pill{margin:0;flex:1;justify-content:center}
   /* ── redesigned home ── */
+  .avatar-wrap{position:relative;flex-shrink:0}
   .avatar{width:31px;height:31px;border-radius:50%;background:var(--accent);
     color:var(--accent-ink);display:flex;align-items:center;justify-content:center;
     font-size:12px;font-weight:700;flex-shrink:0;cursor:pointer;padding:0;
     font-family:inherit;border:2px solid var(--surface);box-shadow:0 0 0 1.5px var(--accent)}
+  .avatar.sync-ok{box-shadow:0 0 0 1.5px var(--accent),0 0 9px 2.5px rgba(49,168,93,.6)}
+  .avatar.sync-bad{box-shadow:0 0 0 1.5px var(--danger),0 0 9px 2.5px rgba(216,83,74,.6)}
+  .avatar-menu{position:absolute;right:0;top:38px;background:var(--surface);
+    border:1px solid var(--line);border-radius:12px;padding:4px;min-width:152px;z-index:30;
+    box-shadow:0 6px 24px rgba(16,24,40,.16)}
+  .avatar-menu button{display:flex;align-items:center;gap:8px;width:100%;background:none;
+    border:none;padding:9px 11px;font-size:13px;font-weight:500;color:var(--text);
+    border-radius:8px;font-family:inherit;text-align:left;cursor:pointer}
+  .avatar-menu button:active{background:var(--inset)}
   .hero-panel{background:var(--hero-grad);border-radius:16px;padding:8px;
     display:flex;gap:8px;align-items:center;margin:2px 0 10px;
     box-shadow:0 6px 18px rgba(30,122,68,.20)}
@@ -214,7 +224,13 @@
       <span class="logo">₹</span>
       <b>Ghar Kharcha</b>
     </div>
-    <button class="avatar" id="switchUser" aria-label="Switch user"></button>
+    <div class="avatar-wrap">
+      <button class="avatar" id="switchUser" aria-label="Account menu" aria-haspopup="true"></button>
+      <div class="avatar-menu hidden" id="avatarMenu">
+        <button id="menuSettings">⚙️ Settings</button>
+        <button id="menuSwitch">👤 Change user</button>
+      </div>
+    </div>
   </header>
   <main>
     <!-- HOME -->
@@ -386,10 +402,6 @@
         </div>
       </div>
       <div class="card">
-        <h3>Sync <span id="syncBadge"></span></h3>
-        <div id="syncInfo" class="muted small"></div>
-      </div>
-      <div class="card">
         <h3>Low-balance alert</h3>
         <label>Warn me when balance falls below</label>
         <input type="number" id="setThreshold" inputmode="numeric" />
@@ -422,8 +434,6 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>Money</button>
     <button data-view="history">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>History</button>
-    <button data-view="settings">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.3 1a7 7 0 0 0-1.7-1l-.4-2.5h-4l-.4 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.5 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.3-1a7 7 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.5-2-1.5c.1-.3.1-.7.1-1z"/></svg>Settings</button>
   </nav>
 </div>
 
@@ -486,6 +496,7 @@ async function cloudFetchAll(){
     Store.data.commonItems = (cfg.data.common_items&&cfg.data.common_items.length)?cfg.data.common_items:DEFAULT_DATA.commonItems;
   }
   Store.cache();
+  online = true;
 }
 
 let rtBound = false;
@@ -502,7 +513,7 @@ let busy = false;
 async function runOp(fn){
   if (busy) return; busy = true; setButtonsDisabled(true);
   try{ await fn(); }
-  catch(e){ alert('Could not save — check your connection.\n\n'+(e.message||e)); }
+  catch(e){ if(USE_CLOUD){ online = false; renderSyncGlow(); } alert('Could not save — check your connection.\n\n'+(e.message||e)); }
   finally{ busy = false; setButtonsDisabled(false); }
 }
 function setButtonsDisabled(v){ ['#saveShop','#saveTop','#saveSal'].forEach(s=>{const b=$(s); if(b)b.disabled=v;}); }
@@ -600,27 +611,20 @@ function monthTotals(m=thisMonth()){
 
 function renderAll(){
   renderHome(); renderQuickChips(); renderItemEditor(); renderPeople();
-  renderSalList(); renderHistory(); renderPaidBySegs(); renderSyncBadge();
+  renderSalList(); renderHistory(); renderPaidBySegs(); renderSyncGlow();
   $('#setThreshold').value = Store.data.settings.lowBalanceThreshold;
   const p = personById(currentUser);
-  const av = $('#switchUser');
-  av.textContent = (p.name||'?')[0].toUpperCase();
-  av.title = p.name || '';
+  $('#switchUser').textContent = (p.name||'?')[0].toUpperCase();
 }
-function renderSyncBadge(){
-  const b = $('#syncBadge'); const info = $('#syncInfo');
+function renderSyncGlow(){
+  const av = $('#switchUser');
+  av.classList.remove('sync-ok','sync-bad');
+  let status = 'local only';
   if (USE_CLOUD){
-    const ok = online;
-    b.innerHTML = `<span class="dot" style="background:${ok?'var(--accent)':'var(--warn)'}"></span>`;
-    b.title = ok ? 'Synced' : 'Offline';
-    info.textContent = ok
-      ? 'Live sync is on. Changes appear on all phones within a second.'
-      : 'Cloud is unreachable right now — showing the last synced copy. It will catch up when back online.';
-  } else {
-    b.innerHTML = `<span class="dot" style="background:var(--muted)"></span>`;
-    b.title = 'Local only';
-    info.textContent = 'Sync not configured yet — data stays on this phone. Add your Supabase keys to share live across all three phones.';
+    av.classList.add(online ? 'sync-ok' : 'sync-bad');
+    status = online ? 'synced' : 'offline';
   }
+  av.title = (personById(currentUser).name || '') + ' · ' + status;
 }
 function renderHome(){
   const bal = balance();
@@ -761,12 +765,13 @@ function renderPeople(){
       <span class="tag" style="margin-left:auto">${p.role==='cook'?'Cook · logs only':'Pays'}</span></div>`).join('');
 }
 
-$$('#nav button').forEach(b=>b.onclick=()=>{
-  $$('#nav button').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+function showView(v){
+  $$('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.view===v));
   $$('main > section').forEach(s=>s.classList.add('hidden'));
-  $('#view-'+b.dataset.view).classList.remove('hidden');
+  $('#view-'+v).classList.remove('hidden');
   window.scrollTo(0,0);
-});
+}
+$$('#nav button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
 function resetShopForm(){
   $('#shopDate').value = today(); shopItems = [{name:'',amount:''}]; $('#shopNote').value='';
   renderItemLines(); updateShopTotal();
@@ -785,7 +790,7 @@ $('#quickChips').addEventListener('click',(e)=>{
 $('#addItemLine').onclick = ()=>{ shopItems.push({name:'',amount:''}); renderItemLines(); };
 $('#seeAllChips').onclick = ()=>{ chipsExpanded=!chipsExpanded; renderQuickChips(); };
 $('#clearAllItems').onclick = ()=>{ shopItems=[{name:'',amount:''}]; renderItemLines(); updateShopTotal(); };
-$('#addMoneyLink').onclick = ()=>{ $('#nav button[data-view="money"]').click(); };
+$('#addMoneyLink').onclick = ()=>{ showView('money'); };
 $('#smartAddBtn').onclick = ()=>{
   const raw=prompt('Paste your list (e.g. "Milk 56, Bread 28, Eggs 36"):');
   if(!raw) return;
@@ -869,7 +874,10 @@ function applyTheme(t){
 $('#themeToggle').onclick = ()=> applyTheme(currentTheme()==='dark' ? 'light' : 'dark');
 applyTheme(currentTheme());
 
-$('#switchUser').onclick = ()=> showLogin();
+$('#switchUser').onclick = (e)=>{ e.stopPropagation(); $('#avatarMenu').classList.toggle('hidden'); };
+document.addEventListener('click',(e)=>{ if(!e.target.closest('.avatar-wrap')) $('#avatarMenu').classList.add('hidden'); });
+$('#menuSettings').onclick = ()=>{ $('#avatarMenu').classList.add('hidden'); showView('settings'); };
+$('#menuSwitch').onclick = ()=>{ $('#avatarMenu').classList.add('hidden'); showLogin(); };
 function showLogin(){
   $('#app').classList.add('hidden'); $('#login').classList.remove('hidden');
   $('#loginPeople').innerHTML = Store.data.people.map(p=>
@@ -883,7 +891,7 @@ $('#loginPeople').onclick = (e)=>{
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   renderAll(); resetShopForm(); goHome();
 };
-function goHome(){ $('#nav button[data-view="home"]').click(); }
+function goHome(){ showView('home'); }
 
 (async function boot(){
   await loadData();
