@@ -130,9 +130,9 @@
   .title-check{width:23px;height:23px;border-radius:50%;background:var(--accent);
     color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
   .title-check svg{width:12px;height:12px}
-  .smart-add-btn{display:flex;align-items:center;gap:4px;background:var(--info-bg);
-    border:1.5px solid var(--accent);color:var(--accent);border-radius:20px;
-    padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit}
+  .smart-add-btn{display:flex;align-items:center;justify-content:center;background:var(--info-bg);
+    border:1.5px solid var(--accent);color:var(--accent);border-radius:50%;
+    width:29px;height:29px;padding:0;font-size:13px;cursor:pointer;font-family:inherit;flex-shrink:0}
   .date-chip{display:flex;align-items:center;gap:4px;background:var(--surface);
     border:1px solid var(--line);border-radius:9px;padding:5px 7px;width:fit-content;flex-shrink:0}
   .date-chip .cal{font-size:12px;line-height:1;flex-shrink:0}
@@ -284,7 +284,7 @@
             <span class="title-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
             Add Expenses
           </div>
-          <button class="smart-add-btn" id="smartAddBtn">✨ Smart Add</button>
+          <button class="smart-add-btn" id="smartAddBtn" aria-label="Smart Add" title="Smart Add">✨</button>
           <div class="date-chip">
             <span class="cal">📅</span>
             <input type="date" id="shopDate" class="date-chip-input" />
