@@ -139,6 +139,7 @@
   .date-chip-input{border:none;background:transparent;color:var(--text);font-size:11px;
     font-weight:600;padding:0;font-family:inherit;outline:none;width:88px;min-width:0}
   .date-chip-input::-webkit-calendar-picker-indicator{display:none}
+  .quick-add-box{background:var(--info-bg);border-radius:11px;padding:7px 9px 6px}
   .quick-chips-row{display:flex;gap:5px;overflow-x:auto;padding:5px 0 2px;
     scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .quick-chips-row::-webkit-scrollbar{display:none}
@@ -291,11 +292,13 @@
           </div>
         </div>
 
-        <div class="sec-row" style="margin-top:0">
-          <span class="sec-lbl">Quick Add</span>
-          <button class="link-btn" id="seeAllChips">See all</button>
+        <div class="quick-add-box">
+          <div class="sec-row" style="margin-top:0">
+            <span class="sec-lbl">Quick Add</span>
+            <button class="link-btn" id="seeAllChips">See all</button>
+          </div>
+          <div id="quickChips" class="quick-chips-row"></div>
         </div>
-        <div id="quickChips" class="quick-chips-row"></div>
 
         <div class="sec-row">
           <span class="sec-lbl">Items &amp; Amounts</span>
