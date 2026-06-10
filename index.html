@@ -81,16 +81,11 @@
   .tag{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--inset);color:var(--muted)}
   .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
   .person-b{color:var(--p-b)} .person-r{color:var(--p-r)} .person-c{color:var(--p-c)}
-  nav{position:fixed;bottom:0;left:0;right:0;max-width:540px;margin:0 auto;display:flex;
-    background:var(--surface);border-radius:20px 20px 0 0;
-    box-shadow:0 -4px 24px rgba(16,24,40,.10);
-    padding:7px 4px calc(env(safe-area-inset-bottom) + 1px)}
-  nav button{flex:1;background:none;border:none;color:var(--muted);font-size:10px;padding:6px 2px;
-    display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
-  nav button.active{color:var(--accent);font-weight:600}
-  nav button.active::before{content:"";position:absolute;top:-7px;left:50%;
-    transform:translateX(-50%);width:32px;height:3.5px;border-radius:99px;background:var(--accent)}
-  nav svg{width:20px;height:20px}
+  .back-btn{display:inline-flex;align-items:center;gap:5px;background:var(--surface);
+    border:1px solid var(--line);border-radius:10px;padding:6px 12px 6px 8px;margin:2px 0 10px;
+    font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit}
+  .back-btn svg{width:15px;height:15px;color:var(--accent);flex-shrink:0}
+  .back-btn:active{background:var(--inset)}
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .stat{background:var(--inset);border-radius:14px;padding:16px}
   .stat .n{font-size:22px;font-weight:700;margin-top:4px}
@@ -311,11 +306,6 @@
   .empty-recent .er-sub{font-size:16px;line-height:1.45}
   .empty-recent .er-sub b{color:var(--accent)}
   .recent-card{border:none;border-radius:0;padding:0;margin:0}
-  nav{max-width:430px;border-radius:24px 24px 0 0;padding:10px 16px calc(env(safe-area-inset-bottom) + 9px);
-    box-shadow:0 -8px 24px rgba(16,24,40,.1)}
-  nav button{font-size:13px;font-weight:600;gap:5px}
-  nav svg{width:30px;height:30px;stroke-width:1.9}
-  nav button.active::before{top:-10px;width:47px;height:4px}
 
   @media (max-width:390px){
     header{padding-left:18px;padding-right:18px}
@@ -425,7 +415,7 @@
   .quick-chips-row{gap:5px}
 
   /* Compact phone sizing — smaller text & padding everywhere on home */
-  body{padding-bottom:72px}
+  body{padding-bottom:calc(env(safe-area-inset-bottom) + 18px)}
   header{padding:10px 16px 8px}
   .brand{gap:10px}
   .brand b{font-size:20px}
@@ -483,10 +473,6 @@
   .er-icon,.er-icon svg{width:66px;height:47px}
   .empty-recent .er-title{font-size:14px}
   .empty-recent .er-sub{font-size:12px}
-  nav{padding:7px 12px calc(env(safe-area-inset-bottom) + 6px);border-radius:18px 18px 0 0}
-  nav button{font-size:11px;gap:3px}
-  nav svg{width:23px;height:23px}
-  nav button.active::before{top:-7px;width:36px;height:3px}
 </style>
 </head>
 <body>
@@ -646,6 +632,9 @@
 
     <!-- MONEY -->
     <section id="view-money" class="hidden">
+      <button class="back-btn" data-back>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Home</button>
       <div class="card">
         <h3>Who has paid — settle up</h3>
         <div id="ledgerBox"></div>
@@ -677,6 +666,9 @@
 
     <!-- HISTORY -->
     <section id="view-history" class="hidden">
+      <button class="back-btn" data-back>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Home</button>
       <div class="card">
         <h3>All activity</h3>
         <div class="seg" style="margin-bottom:10px">
@@ -691,6 +683,9 @@
 
     <!-- SETTINGS -->
     <section id="view-settings" class="hidden">
+      <button class="back-btn" data-back>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Home</button>
       <div class="card">
         <h3>Appearance</h3>
         <div class="row between">
@@ -723,15 +718,6 @@
       </div>
     </section>
   </main>
-
-  <nav id="nav">
-    <button data-view="home" class="active">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Home</button>
-    <button data-view="money">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>Money</button>
-    <button data-view="history">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>History</button>
-  </nav>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1080,12 +1066,11 @@ function renderPeople(){
 }
 
 function showView(v){
-  $$('#nav button').forEach(x=>x.classList.toggle('active', x.dataset.view===v));
   $$('main > section').forEach(s=>s.classList.add('hidden'));
   $('#view-'+v).classList.remove('hidden');
   window.scrollTo(0,0);
 }
-$$('#nav button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
+$$('[data-back]').forEach(b=>b.onclick=()=>showView('home'));
 function resetShopForm(){
   $('#shopDate').value = today(); shopItems = [{name:'',amount:''}]; $('#shopNote').value='';
   renderItemLines(); updateShopTotal(); updateDateLabel();
