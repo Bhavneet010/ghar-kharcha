@@ -118,38 +118,42 @@
     border-radius:8px;font-family:inherit;text-align:left;cursor:pointer}
   .avatar-menu button:active{background:var(--inset)}
   .hero-panel{background:var(--hero-grad);border-radius:16px;padding:8px;
-    display:flex;gap:8px;align-items:center;margin:2px 0 10px;
+    display:flex;gap:8px;align-items:center;margin:2px 0 12px;
     box-shadow:0 6px 18px rgba(30,122,68,.20)}
-  .hero-illu{width:82px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-  .hero-illu svg{width:80px;height:80px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.18))}
-  .hero-cards{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px;min-width:0}
-  .stat-mini{background:var(--surface);border-radius:12px;padding:7px 9px;
-    box-shadow:0 2px 10px rgba(0,0,0,.10);min-width:0}
+  .hero-illu{width:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .hero-illu svg{width:78px;height:78px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.18))}
+  .hero-card{flex:1;min-width:0;background:var(--surface);border-radius:13px;
+    padding:9px 10px;display:flex;gap:9px;box-shadow:0 2px 10px rgba(0,0,0,.10)}
+  .hero-divider{width:1px;background:var(--line);flex-shrink:0;align-self:stretch}
+  .hero-col{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
   .smc-label{font-size:8px;color:var(--muted);font-weight:700;letter-spacing:.3px;
-    text-transform:uppercase;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    text-transform:uppercase;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   .smc-amount{font-size:17px;font-weight:700;letter-spacing:-.5px;color:var(--text)}
+  .smc-amount.bal{color:var(--accent)}
   .smc-amount.low{color:var(--danger)}
   .smc-sub{font-size:8px;color:var(--muted);margin-top:2px;line-height:1.3}
-  .smc-link{font-size:9px;color:var(--accent);background:none;border:none;padding:0;
-    cursor:pointer;font-weight:600;margin-top:2px;display:inline-block;font-family:inherit}
-  .home-form-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;
-    padding:10px 10px 12px;margin:0 0 12px;box-shadow:var(--shadow)}
-  .form-card-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px}
-  .form-card-title{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;
-    letter-spacing:-.2px;flex:1;min-width:0;white-space:nowrap}
-  .title-check{width:23px;height:23px;border-radius:50%;background:var(--accent);
-    color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
-  .title-check svg{width:12px;height:12px}
+  .hero-btn{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;
+    border-radius:8px;padding:5px 8px;cursor:pointer;font-family:inherit;margin-top:6px;white-space:nowrap}
+  .hero-btn svg{flex-shrink:0}
+  .hero-btn.solid{background:var(--accent);color:var(--accent-ink);border:none}
+  .hero-btn.outline{background:var(--surface);color:var(--text);border:1px solid var(--line)}
+  .page-hdr{display:flex;align-items:center;gap:7px;margin:12px 0 8px}
+  .page-title{font-size:15px;font-weight:700;letter-spacing:-.2px;flex:1;min-width:0;white-space:nowrap}
   .smart-add-btn{display:flex;align-items:center;justify-content:center;background:var(--info-bg);
     border:1.5px solid var(--accent);color:var(--accent);border-radius:50%;
     width:29px;height:29px;padding:0;font-size:13px;cursor:pointer;font-family:inherit;flex-shrink:0}
-  .date-chip{display:flex;align-items:center;gap:4px;background:var(--surface);
-    border:1px solid var(--line);border-radius:9px;padding:5px 7px;width:fit-content;flex-shrink:0}
-  .date-chip .cal{font-size:12px;line-height:1;flex-shrink:0}
-  .date-chip-input{border:none;background:transparent;color:var(--text);font-size:11px;
-    font-weight:600;padding:0;font-family:inherit;outline:none;width:88px;min-width:0}
-  .date-chip-input::-webkit-calendar-picker-indicator{display:none}
-  .quick-add-box{background:var(--info-bg);border-radius:11px;padding:7px 9px 6px}
+  .date-chip{position:relative;display:flex;align-items:center;gap:5px;background:var(--surface);
+    border:1px solid var(--line);border-radius:10px;padding:7px 9px;width:fit-content;flex-shrink:0}
+  .date-chip .cal-ic{width:13px;height:13px;color:var(--accent);flex-shrink:0}
+  .date-chip .chev{width:11px;height:11px;color:var(--muted);flex-shrink:0}
+  .date-chip #dateLabel{font-size:11px;font-weight:600;color:var(--text);white-space:nowrap}
+  .date-overlay{position:absolute;inset:0;width:100%;height:100%;opacity:0;border:none;
+    padding:0;font-family:inherit}
+  .date-overlay::-webkit-calendar-picker-indicator{width:100%;height:100%;margin:0;padding:0}
+  .qa-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+    padding:8px 10px 6px;margin-bottom:10px}
+  .items-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+    padding:8px;margin-top:6px}
   .quick-chips-row{display:flex;gap:5px;overflow-x:auto;padding:5px 0 2px;
     scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .quick-chips-row::-webkit-scrollbar{display:none}
@@ -161,7 +165,7 @@
   .qchip-more{width:26px;height:26px;border-radius:50%;background:var(--surface);
     border:1px solid var(--line);font-size:15px;color:var(--muted);cursor:pointer;
     flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit}
-  .irow{display:flex;align-items:center;gap:6px;background:var(--surface);
+  .irow{display:flex;align-items:center;gap:6px;background:var(--inset);
     border:1px solid var(--line);border-radius:11px;padding:5px 6px;margin-bottom:5px}
   .irow .ii{font-size:14px;width:27px;height:27px;flex-shrink:0;line-height:1;
     background:var(--inset);border-radius:8px;display:flex;align-items:center;justify-content:center}
@@ -179,13 +183,15 @@
   .add-item-dashed{width:100%;background:none;border:1.5px dashed var(--accent);
     border-radius:10px;padding:7px;color:var(--accent);font-size:12px;font-weight:600;
     cursor:pointer;margin-top:1px;font-family:inherit;opacity:.9}
-  .note-wrap{position:relative;margin-top:4px}
-  .note-wrap input{background:var(--surface);border:1px solid var(--line)}
+  .note-wrap{position:relative}
+  .note-wrap input{background:var(--surface);border:1px solid var(--line);
+    padding:10px 32px 10px 11px;font-size:12px;border-radius:13px}
   .note-leaf{position:absolute;right:11px;top:50%;transform:translateY(-50%);
     font-size:14px;pointer-events:none}
-  .total-row-new{display:flex;justify-content:space-between;align-items:center;
-    background:var(--info-bg);border-radius:10px;padding:8px 11px;margin:9px 0}
-  .tl{font-size:12px;color:var(--text);font-weight:600}
+  .total-card{display:flex;justify-content:space-between;align-items:center;
+    background:var(--surface);border:1px solid var(--line);border-radius:13px;
+    padding:11px 12px;margin:10px 0}
+  .tl{font-size:12px;color:var(--text);font-weight:700}
   .ta{font-size:16px;font-weight:700;letter-spacing:-.5px;color:var(--accent)}
   .save-btn-new{display:flex;align-items:center;justify-content:center;gap:7px;
     width:100%;background:var(--accent);color:var(--accent-ink);border:none;
@@ -198,8 +204,15 @@
   .link-btn{background:none;border:none;font-size:10px;color:var(--accent);
     font-weight:600;padding:0;cursor:pointer;font-family:inherit}
   .link-btn.danger{color:var(--danger)}
-  .recent-section{border-top:1px solid var(--line);margin-top:10px;padding-top:8px}
-  .recent-section h3{margin:0 0 6px;font-size:11px;color:var(--muted);font-weight:600}
+  .recent-section{margin-top:12px}
+  .empty-recent{display:flex;gap:11px;align-items:center;padding:4px 4px 8px}
+  .er-icon{width:46px;height:46px;border-radius:13px;background:var(--info-bg);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent)}
+  .er-icon svg{width:26px;height:26px}
+  .empty-recent .er-title{font-size:12px;font-weight:700;color:var(--text)}
+  .empty-recent .er-sub{font-size:11px;color:var(--muted);line-height:1.45;margin-top:1px}
+  .recent-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;
+    padding:2px 12px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -235,7 +248,7 @@
   <main>
     <!-- HOME -->
     <section id="view-home">
-      <!-- Hero: green gradient panel with grocery bag + stat cards -->
+      <!-- Hero: green gradient panel with grocery bag + stats card -->
       <div class="hero-panel">
         <div class="hero-illu" aria-hidden="true">
           <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -278,72 +291,80 @@
             <text x="67" y="79.5" text-anchor="middle" font-size="16" font-weight="700" fill="#8c6400" font-family="system-ui,sans-serif">₹</text>
           </svg>
         </div>
-        <div class="hero-cards">
-          <div class="stat-mini">
-            <div class="smc-label">Cook's Balance</div>
-            <div id="balanceVal" class="smc-amount">₹0</div>
+        <div class="hero-card">
+          <div class="hero-col">
+            <div class="smc-label">Cook Balance</div>
+            <div id="balanceVal" class="smc-amount bal">₹0</div>
             <div class="smc-sub" id="balanceSub">No advance recorded yet</div>
-            <button class="smc-link" id="addMoneyLink">Add money</button>
+            <button class="hero-btn solid" id="addMoneyLink">Add money
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+            </button>
           </div>
-          <div class="stat-mini">
-            <div class="smc-label">This Month</div>
+          <div class="hero-divider"></div>
+          <div class="hero-col">
+            <div class="smc-label">This Month Spend</div>
             <div id="mGroc" class="smc-amount">₹0</div>
-            <div class="smc-sub">Grocery spend</div>
+            <div class="smc-sub" id="monthRange"></div>
+            <button class="hero-btn outline" id="viewSummaryBtn">View summary
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+            </button>
           </div>
         </div>
       </div>
 
-      <!-- Main form card -->
-      <div class="home-form-card">
-        <div id="alertSlot" style="margin-bottom:4px"></div>
-        <div class="form-card-hdr">
-          <div class="form-card-title">
-            <span class="title-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-            Add Expenses
-          </div>
-          <button class="smart-add-btn" id="smartAddBtn" aria-label="Smart Add" title="Smart Add">✨</button>
-          <div class="date-chip">
-            <span class="cal">📅</span>
-            <input type="date" id="shopDate" class="date-chip-input" />
-          </div>
-        </div>
+      <div id="alertSlot"></div>
 
-        <div class="quick-add-box">
-          <div class="sec-row" style="margin-top:0">
-            <span class="sec-lbl">Quick Add</span>
-            <button class="link-btn" id="seeAllChips">See all</button>
-          </div>
-          <div id="quickChips" class="quick-chips-row"></div>
+      <!-- Add Expenses heading row -->
+      <div class="page-hdr">
+        <span class="page-title">Add Expenses</span>
+        <button class="smart-add-btn" id="smartAddBtn" aria-label="Smart Add" title="Smart Add">✨</button>
+        <div class="date-chip">
+          <svg class="cal-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+          <span id="dateLabel"></span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+          <input type="date" id="shopDate" class="date-overlay" aria-label="Date" />
         </div>
+      </div>
 
-        <div class="sec-row">
-          <span class="sec-lbl">Items &amp; Amounts</span>
-          <button class="link-btn danger" id="clearAllItems">Clear all</button>
+      <!-- Quick Add card -->
+      <div class="qa-card">
+        <div class="sec-row" style="margin-top:0">
+          <span class="sec-lbl">Quick Add</span>
+          <button class="link-btn" id="seeAllChips">See all</button>
         </div>
-        <div id="itemLines" style="margin-top:6px"></div>
+        <div id="quickChips" class="quick-chips-row"></div>
+      </div>
+
+      <!-- Items -->
+      <div class="sec-row">
+        <span class="sec-lbl">Items &amp; Amounts</span>
+        <button class="link-btn danger" id="clearAllItems">Clear all</button>
+      </div>
+      <div class="items-card">
+        <div id="itemLines"></div>
         <button class="add-item-dashed" id="addItemLine">+ Add another item</button>
+      </div>
 
-        <div class="sec-lbl" style="margin:8px 0 0">Note (optional)</div>
-        <div class="note-wrap">
-          <input id="shopNote" placeholder="e.g. items for guests, weekend stock up, etc." style="padding:7px 30px 7px 9px;font-size:12px;border-radius:9px" />
-          <span class="note-leaf">🌿</span>
-        </div>
+      <!-- Note -->
+      <div class="sec-lbl" style="margin:10px 0 6px">Note (optional)</div>
+      <div class="note-wrap">
+        <input id="shopNote" placeholder="e.g. items for guests, weekend stock up, etc." />
+        <span class="note-leaf">🌿</span>
+      </div>
 
-        <div class="total-row-new">
-          <span class="tl">Total Amount</span>
-          <span id="shopTotal" class="ta">₹0</span>
-        </div>
+      <!-- Total -->
+      <div class="total-card">
+        <span class="tl">Total Amount</span>
+        <span id="shopTotal" class="ta">₹0</span>
+      </div>
 
-        <button class="save-btn-new" id="saveShop">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
-          Save Expenses
-        </button>
+      <button class="save-btn-new" id="saveShop">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+        Save Expenses
+      </button>
 
-        <!-- Recent shopping embedded below save -->
-        <div class="recent-section">
-          <h3>Recent shopping</h3>
-          <div id="recentList"></div>
-        </div>
+      <div class="recent-section">
+        <div id="recentList"></div>
       </div>
     </section>
 
@@ -661,11 +682,17 @@ function renderHome(){
 
   const mt = monthTotals();
   $('#mGroc').textContent = fmt(mt.groc);
+  const now = new Date(), mon = now.toLocaleDateString('en-IN',{month:'short'});
+  $('#monthRange').textContent = `1 ${mon} – ${now.getDate()} ${mon} ${now.getFullYear()}`;
 
   const recent = [...Store.data.expenses].sort((x,y)=>(y.date+'').localeCompare(x.date+'')).slice(0,5);
   $('#recentList').innerHTML = recent.length
-    ? recent.map(e=>expenseRow(e)).join('')
-    : `<div class="empty">No shopping logged yet.<br>Add today's items above and tap <b>Save Expenses</b>.</div>`;
+    ? `<div class="sec-lbl">Recent shopping</div><div class="recent-card">${recent.map(e=>expenseRow(e)).join('')}</div>`
+    : `<div class="empty-recent">
+        <div class="er-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1.2 13H7.2L6 7z"/><path d="M9 9.5V6a3 3 0 0 1 6 0v3.5"/></svg></div>
+        <div><div class="er-title">No shopping logged yet.</div>
+        <div class="er-sub">Add today's items above and tap <b>Save Expenses</b>.</div></div>
+      </div>`;
 }
 function banner(type,title,msg){
   const icon = type==='danger'?'⚠️':type==='warn'?'🔔':'ℹ️';
@@ -688,7 +715,7 @@ function renderQuickChips(){
   const seeBtn=$('#seeAllChips');
   if(seeBtn) seeBtn.textContent = chipsExpanded ? 'Show less' : 'See all';
   box.innerHTML = items.map(n=>
-    `<button class="qchip" data-item="${n}"><span class="ci">${itemEmoji(n)}</span>${n}</button>`
+    `<button class="qchip" data-item="${n}"><span class="ci">${itemEmoji(n)}</span>+ ${n}</button>`
   ).join('') + (chipsExpanded?'':
     `<button class="qchip-more" id="qchipMore">+</button>`);
   const more=$('#qchipMore');
@@ -774,8 +801,16 @@ function showView(v){
 $$('#nav button').forEach(b=>b.onclick=()=>showView(b.dataset.view));
 function resetShopForm(){
   $('#shopDate').value = today(); shopItems = [{name:'',amount:''}]; $('#shopNote').value='';
-  renderItemLines(); updateShopTotal();
+  renderItemLines(); updateShopTotal(); updateDateLabel();
 }
+function updateDateLabel(){
+  const v = $('#shopDate').value;
+  $('#dateLabel').textContent = v
+    ? new Date(v+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})
+    : 'Pick date';
+}
+$('#shopDate').addEventListener('change', updateDateLabel);
+$('#viewSummaryBtn').onclick = ()=> showView('history');
 
 $('#quickChips').addEventListener('click',(e)=>{
   if(e.target.closest('#qchipMore')) return;
