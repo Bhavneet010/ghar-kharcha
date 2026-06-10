@@ -213,6 +213,216 @@
   .empty-recent .er-sub{font-size:11px;color:var(--muted);line-height:1.45;margin-top:1px}
   .recent-card{background:var(--surface);border:1px solid var(--line);border-radius:13px;
     padding:2px 12px;margin-top:6px}
+
+  /* Reference-style home surface */
+  :root{
+    --bg:#fbfaf8; --surface:#ffffff; --inset:#f7f7f5;
+    --text:#161d2b; --muted:#6e7580; --line:#e9ece7;
+    --accent:#188a4c; --accent-strong:#138344; --accent-soft:#f1f8f3;
+    --danger:#d75752; --shadow:0 12px 28px rgba(16,24,40,.08);
+  }
+  [data-theme="dark"]{
+    --bg:#111713; --surface:#18201b; --inset:#222923;
+    --text:#eef4ef; --muted:#a4afa8; --line:rgba(255,255,255,.1);
+    --accent:#2bd17e; --accent-strong:#31da84; --accent-soft:#16251b;
+    --shadow:none;
+  }
+  body{max-width:430px;padding-bottom:86px}
+  header{position:relative;padding:18px 22px 15px;background:var(--bg)}
+  .brand{gap:14px}
+  .brand b{font-size:28px;line-height:1.1;font-weight:800;color:var(--text);letter-spacing:0}
+  .logo,.avatar{width:47px;height:47px;font-size:24px;border:3px solid var(--surface);
+    box-shadow:0 0 0 2px var(--accent),0 3px 10px rgba(16,24,40,.22)}
+  .avatar{font-size:19px}
+  .avatar.sync-ok{box-shadow:0 0 0 2px var(--accent),0 3px 10px rgba(16,24,40,.22)}
+  .avatar.sync-bad{box-shadow:0 0 0 2px var(--danger),0 3px 10px rgba(16,24,40,.22)}
+  .avatar-menu{top:58px;right:0}
+  main{padding:0 21px}
+  #view-home{padding-bottom:4px}
+  .hero-panel{background:var(--accent-soft);border:1px solid #e2eee4;border-radius:21px;
+    padding:13px 14px 14px;margin:3px 0 26px;display:grid;grid-template-columns:104px minmax(0,1fr);
+    gap:16px;align-items:center;box-shadow:0 17px 25px rgba(34,54,40,.12)}
+  .hero-illu{width:104px;align-self:stretch}
+  .hero-illu svg{width:108px;height:108px;filter:drop-shadow(0 7px 10px rgba(20,64,35,.15))}
+  .hero-card{background:transparent;border-radius:0;padding:0;box-shadow:none;display:grid;
+    grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);gap:18px}
+  .hero-divider{background:#dde8dd;width:1px}
+  .hero-col{gap:0}
+  .smc-label{font-size:14px;text-transform:none;letter-spacing:0;font-weight:650;color:#6f7580;margin-bottom:8px}
+  .smc-amount{font-size:27px;line-height:1;font-weight:850;color:var(--text);letter-spacing:0}
+  .smc-amount.bal{color:var(--accent)}
+  .smc-sub{font-size:13px;color:#717781;margin-top:12px;min-height:18px;white-space:nowrap}
+  .hero-btn{min-height:29px;margin-top:12px;background:var(--surface);border:1px solid #dfe5df;
+    border-radius:9px;box-shadow:0 2px 6px rgba(16,24,40,.08);font-size:13px;font-weight:750;
+    padding:6px 11px;color:var(--accent);justify-content:space-between;width:100%;gap:8px}
+  .hero-btn.solid,.hero-btn.outline{background:var(--surface);color:var(--accent);border:1px solid #dfe5df}
+  .hero-btn.solid svg{fill:var(--accent);stroke:var(--surface)}
+  .hero-btn.outline svg{stroke:var(--accent);width:15px;height:15px}
+  .page-hdr{margin:0 9px 16px;gap:12px}
+  .page-title{font-size:24px;line-height:1.15;font-weight:850;letter-spacing:0}
+  .smart-add-btn{display:flex;width:39px;height:39px;border-radius:14px;background:var(--surface);
+    border:1px solid #e6e9e5;color:var(--accent);font-size:18px;box-shadow:0 2px 7px rgba(16,24,40,.04)}
+  .date-chip{margin-left:auto;border-radius:14px;padding:12px 12px;min-height:45px;
+    border-color:#e6e9e5;box-shadow:0 2px 7px rgba(16,24,40,.04);gap:9px}
+  .date-chip .cal-ic{width:20px;height:20px}
+  .date-chip .chev{width:16px;height:16px;color:#111827}
+  .date-chip #dateLabel{font-size:16px;font-weight:760;color:var(--text)}
+  .qa-card{border-radius:19px;padding:17px 13px 12px;margin-bottom:28px;border-color:#edf0eb;
+    box-shadow:0 12px 24px rgba(18,46,28,.08)}
+  .sec-row{margin:0 2px 12px}
+  .sec-lbl{font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
+  .qa-card .sec-lbl{font-size:18px;font-weight:750}
+  .link-btn{font-size:16px;font-weight:750;color:var(--accent)}
+  .link-btn.danger{font-size:16px;color:var(--danger)}
+  .quick-chips-row{gap:9px;padding:8px 0 2px}
+  .qchip{min-height:45px;border-radius:24px;border-color:#e4e8e2;background:var(--surface);
+    box-shadow:0 2px 6px rgba(16,24,40,.05);font-size:17px;font-weight:700;padding:8px 15px;gap:8px}
+  .qchip .ci{font-size:21px}
+  .qchip-more{width:45px;height:45px;font-size:31px;line-height:1;color:var(--accent);border-color:#e4e8e2}
+  .items-card{border-radius:20px;border-color:#edf0eb;padding:0;margin-top:14px;margin-bottom:16px;
+    box-shadow:0 12px 24px rgba(16,24,40,.06)}
+  .irow{gap:12px;background:var(--surface);border-color:#e8ece8;border-radius:17px;margin:0;padding:9px 11px;min-height:68px}
+  .irow .ii{width:43px;height:43px;border-radius:13px;background:#f5f6f4;font-size:24px}
+  .irow .in{font-size:21px;font-weight:500;color:var(--text)}
+  .amt-box{height:44px;border:none;background:#f7f7f6;border-radius:11px;padding:0 12px;gap:12px;min-width:72px}
+  .amt-box .ir{font-size:20px;color:#69717c}
+  .amt-box .ia{width:34px;font-size:22px;font-weight:500;color:#727984}
+  .irow .idel{padding:6px;color:var(--danger)}
+  .irow .idel svg{width:26px;height:26px;stroke-width:2.3}
+  .add-item-dashed{margin:9px 0 0;border-radius:17px;border-color:var(--accent);
+    padding:16px;font-size:18px;line-height:1.2}
+  #view-home > .sec-row{margin:0 9px 11px}
+  #view-home > .sec-lbl{margin:24px 9px 10px!important;font-size:20px!important}
+  .note-wrap input{border-color:#e8ece8;border-radius:16px;min-height:58px;padding:14px 50px 14px 15px;
+    font-size:18px;background:var(--surface)}
+  .note-leaf{font-size:25px;right:18px}
+  .total-card{border:none;background:#f7faf6;border-radius:18px;min-height:79px;padding:18px 23px;margin:17px 0}
+  .tl{font-size:21px;font-weight:850}
+  .ta{font-size:31px;font-weight:850;color:var(--accent)}
+  .save-btn-new{min-height:68px;border-radius:16px;font-size:22px;font-weight:800;background:var(--accent);
+    box-shadow:0 9px 18px rgba(24,138,76,.3);gap:14px}
+  .save-btn-new svg{width:28px;height:28px}
+  .recent-section{background:var(--surface);border:1px solid #eef0ed;border-radius:20px;margin-top:18px;
+    padding:14px 18px;box-shadow:0 10px 22px rgba(16,24,40,.06)}
+  .empty-recent{padding:0;gap:18px}
+  .er-icon{width:92px;height:65px;border-radius:0;background:transparent;color:var(--accent)}
+  .er-icon svg{width:92px;height:65px}
+  .empty-recent .er-title{font-size:17px;font-weight:850}
+  .empty-recent .er-sub{font-size:16px;line-height:1.45}
+  .empty-recent .er-sub b{color:var(--accent)}
+  .recent-card{border:none;border-radius:0;padding:0;margin:0}
+  nav{max-width:430px;border-radius:24px 24px 0 0;padding:10px 16px calc(env(safe-area-inset-bottom) + 9px);
+    box-shadow:0 -8px 24px rgba(16,24,40,.1)}
+  nav button{font-size:13px;font-weight:600;gap:5px}
+  nav svg{width:30px;height:30px;stroke-width:1.9}
+  nav button.active::before{top:-10px;width:47px;height:4px}
+
+  @media (max-width:390px){
+    header{padding-left:18px;padding-right:18px}
+    main{padding-left:16px;padding-right:16px}
+    .brand b{font-size:25px}
+    .logo,.avatar{width:43px;height:43px}
+    .hero-panel{grid-template-columns:88px minmax(0,1fr);gap:12px;padding:12px}
+    .hero-illu,.hero-illu svg{width:88px;height:88px}
+    .hero-card{gap:11px}
+    .smc-label{font-size:12px}
+    .smc-amount{font-size:23px}
+    .smc-sub{font-size:11px}
+    .hero-btn{font-size:11px;padding-left:8px;padding-right:8px}
+    .page-hdr{margin-left:2px;margin-right:2px;flex-wrap:wrap}
+    .date-chip{width:100%;justify-content:center}
+  }
+
+  /* Visual tuning after browser pass */
+  header{padding-top:13px;padding-bottom:12px}
+  .brand b{font-size:26px}
+  .logo,.avatar{width:41px;height:41px;font-size:21px}
+  .avatar{font-size:17px}
+  main{padding-left:21px;padding-right:21px}
+  .hero-panel{grid-template-columns:92px minmax(0,1fr);gap:12px;padding:12px 13px;
+    min-height:130px;margin-bottom:21px}
+  .hero-illu,.hero-illu svg{width:92px;height:92px}
+  .hero-card{gap:12px}
+  .smc-label{font-size:13px;margin-bottom:7px}
+  .smc-amount{font-size:25px}
+  .smc-sub{font-size:12px;margin-top:9px}
+  .hero-btn{font-size:12px;min-height:28px;margin-top:9px;padding:5px 9px}
+  .page-hdr{margin-bottom:13px}
+  .page-title{font-size:23px}
+  .date-chip{min-height:42px;padding:10px 12px}
+  .date-chip #dateLabel{font-size:15px}
+  .qa-card{padding:15px 13px 11px;margin-bottom:23px}
+  .qa-card .sec-lbl{font-size:17px}
+  .quick-chips-row{gap:8px;padding-top:7px}
+  .qchip{min-height:38px;font-size:16px;padding:6px 14px}
+  .qchip .ci{font-size:19px}
+  .qchip-more{width:38px;height:38px;font-size:27px}
+  .sec-lbl{font-size:19px}
+  .expense-card{background:var(--surface);border:1px solid #edf0ed;border-radius:20px;
+    padding:0 0 15px;margin-top:12px;box-shadow:0 12px 24px rgba(16,24,40,.06)}
+  .items-card{border:none;border-radius:20px 20px 0 0;box-shadow:none;margin:0;padding:0}
+  .irow{min-height:54px;border-radius:16px;padding:6px 10px}
+  .irow .ii{width:39px;height:39px;font-size:22px}
+  .irow .in{font-size:19px}
+  .amt-box{height:38px;min-width:70px}
+  .amt-box .ir{font-size:18px}
+  .amt-box .ia{font-size:20px}
+  .irow .idel svg{width:24px;height:24px}
+  .add-item-dashed{width:calc(100% - 2px);margin:8px 1px 0;padding:12px;font-size:17px}
+  #view-home > .sec-lbl{margin:19px 17px 8px!important;font-size:18px!important}
+  .note-wrap{margin:0 14px}
+  .note-wrap input{min-height:48px;padding-top:11px;padding-bottom:11px;font-size:16px}
+  .note-leaf{font-size:22px}
+  .total-card{min-height:62px;margin:14px 14px 14px;padding:13px 20px}
+  .tl{font-size:19px}
+  .ta{font-size:29px}
+  .save-btn-new{width:calc(100% - 28px);margin:0 14px;min-height:58px;font-size:20px;border-radius:15px}
+  .save-btn-new svg{width:25px;height:25px}
+  .recent-section{margin-top:12px}
+
+  @media (max-width:390px){
+    .hero-panel{grid-template-columns:82px minmax(0,1fr)}
+    .hero-illu,.hero-illu svg{width:82px;height:82px}
+    .hero-card{gap:9px}
+    .smc-label{font-size:11px}
+    .smc-amount{font-size:22px}
+    .smc-sub{font-size:10px}
+    .hero-btn{font-size:10.5px}
+  }
+
+  /* Final mobile fit */
+  .hero-panel{margin-bottom:12px}
+  .smc-label{font-size:12px}
+  .smc-sub{font-size:11px;line-height:1.2}
+  .hero-btn{font-size:11px;padding-left:8px;padding-right:8px}
+  .page-hdr{margin-bottom:8px}
+  .date-chip{min-height:39px;padding:8px 10px;gap:7px}
+  .date-chip .cal-ic{width:18px;height:18px}
+  .date-chip .chev{width:14px;height:14px}
+  .date-chip #dateLabel{font-size:14px}
+  .qa-card{padding:12px 13px 9px;margin-bottom:16px}
+  .qa-card .sec-row{margin-bottom:6px}
+  .qchip{min-height:34px;font-size:15px;padding:5px 13px}
+  .qchip .ci{font-size:18px}
+  .qchip-more{width:34px;height:34px;font-size:24px}
+  .quick-chips-row{padding-top:4px}
+  #view-home > .sec-row{margin-bottom:8px}
+  .expense-card{margin-top:8px;padding-bottom:12px}
+  .irow{min-height:48px;padding:5px 10px}
+  .irow .ii{width:36px;height:36px;font-size:20px}
+  .irow .in{font-size:18px}
+  .amt-box{height:35px;min-width:68px}
+  .amt-box .ir{font-size:17px}
+  .amt-box .ia{font-size:19px}
+  .add-item-dashed{margin-top:6px;padding:10px;font-size:16px}
+  #view-home > .sec-lbl{margin-top:15px!important;margin-bottom:7px!important}
+  .note-wrap input{min-height:44px;font-size:15px;padding-top:9px;padding-bottom:9px}
+  .total-card{min-height:57px;margin-top:12px;margin-bottom:12px}
+  .save-btn-new{min-height:54px;font-size:19px}
+  .qchip{font-size:11px;padding-left:5px;padding-right:5px;gap:3px}
+  .qchip .ci{font-size:13px}
+  .qchip-more{width:32px;height:32px}
+  .quick-chips-row{gap:5px}
 </style>
 </head>
 <body>
@@ -295,7 +505,7 @@
           <div class="hero-col">
             <div class="smc-label">Cook Balance</div>
             <div id="balanceVal" class="smc-amount bal">₹0</div>
-            <div class="smc-sub" id="balanceSub">No advance recorded yet</div>
+            <div class="smc-sub" id="balanceSub">Advance pending: ₹0</div>
             <button class="hero-btn solid" id="addMoneyLink">Add money
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
             </button>
@@ -340,6 +550,7 @@
         <span class="sec-lbl">Items &amp; Amounts</span>
         <button class="link-btn danger" id="clearAllItems">Clear all</button>
       </div>
+      <div class="expense-card">
       <div class="items-card">
         <div id="itemLines"></div>
         <button class="add-item-dashed" id="addItemLine">+ Add another item</button>
@@ -362,6 +573,7 @@
         <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
         Save Expenses
       </button>
+      </div>
 
       <div class="recent-section">
         <div id="recentList"></div>
@@ -651,10 +863,7 @@ function renderHome(){
   const bal = balance();
   const thr = Store.data.settings.lowBalanceThreshold;
   const el = $('#balanceVal'); el.textContent = fmt(bal); el.classList.toggle('low', bal < thr);
-  const totalIn = Store.data.topups.reduce((s,t)=>s+Number(t.amount),0);
-  $('#balanceSub').textContent = Store.data.topups.length
-    ? `${fmt(totalIn)} given · ${fmt(totalIn-bal)} spent`
-    : 'No advance recorded yet';
+  $('#balanceSub').textContent = `Advance pending: ${fmt(Math.max(0, -bal))}`;
 
   const slot = $('#alertSlot'); slot.innerHTML='';
   if (Store.data.topups.length){
@@ -689,7 +898,21 @@ function renderHome(){
   $('#recentList').innerHTML = recent.length
     ? `<div class="sec-lbl">Recent shopping</div><div class="recent-card">${recent.map(e=>expenseRow(e)).join('')}</div>`
     : `<div class="empty-recent">
-        <div class="er-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1.2 13H7.2L6 7z"/><path d="M9 9.5V6a3 3 0 0 1 6 0v3.5"/></svg></div>
+        <div class="er-icon"><svg viewBox="0 0 120 84" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="83" cy="68" r="12" fill="#e9efea"/>
+          <circle cx="95" cy="61" r="7" fill="#dce7de"/>
+          <path d="M21 16h7l8 43h52l8-31H36" stroke="#6e7b78" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M39 31h52l-6 24H44z" fill="#8fc46e"/>
+          <path d="M50 35h27l-5 17H53z" fill="#6fac55"/>
+          <path d="M62 42c7-8 17-8 21-7-1 9-7 16-20 16z" fill="#2f8f58"/>
+          <path d="M65 50c4-5 10-8 16-11" stroke="#b7dc8c" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="41" cy="68" r="6" fill="#66736f"/>
+          <circle cx="85" cy="68" r="6" fill="#66736f"/>
+          <circle cx="41" cy="68" r="2.5" fill="#f8faf8"/>
+          <circle cx="85" cy="68" r="2.5" fill="#f8faf8"/>
+          <path d="M28 9c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7z" fill="#e8efec"/>
+          <path d="M101 48l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#d7e5d9"/>
+        </svg></div>
         <div><div class="er-title">No shopping logged yet.</div>
         <div class="er-sub">Add today's items above and tap <b>Save Expenses</b>.</div></div>
       </div>`;
@@ -805,9 +1028,11 @@ function resetShopForm(){
 }
 function updateDateLabel(){
   const v = $('#shopDate').value;
-  $('#dateLabel').textContent = v
-    ? new Date(v+'T00:00').toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})
-    : 'Pick date';
+  if (!v){ $('#dateLabel').textContent = 'Pick date'; return; }
+  const d = new Date(v+'T00:00');
+  const weekday = d.toLocaleDateString('en-IN',{weekday:'short'});
+  const month = d.toLocaleDateString('en-IN',{month:'short'});
+  $('#dateLabel').textContent = `${weekday}, ${d.getDate()} ${month} ${d.getFullYear()}`;
 }
 $('#shopDate').addEventListener('change', updateDateLabel);
 $('#viewSummaryBtn').onclick = ()=> showView('history');
