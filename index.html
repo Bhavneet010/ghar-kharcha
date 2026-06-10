@@ -178,11 +178,6 @@
   .add-item-dashed{width:100%;background:none;border:1.5px dashed var(--accent);
     border-radius:10px;padding:7px;color:var(--accent);font-size:12px;font-weight:600;
     cursor:pointer;margin-top:1px;font-family:inherit;opacity:.9}
-  .note-wrap{position:relative}
-  .note-wrap input{background:var(--surface);border:1px solid var(--line);
-    padding:10px 32px 10px 11px;font-size:12px;border-radius:13px}
-  .note-leaf{position:absolute;right:11px;top:50%;transform:translateY(-50%);
-    font-size:14px;pointer-events:none}
   .total-card{display:flex;justify-content:space-between;align-items:center;
     background:var(--surface);border:1px solid var(--line);border-radius:13px;
     padding:11px 12px;margin:10px 0}
@@ -298,9 +293,6 @@
     padding:16px;font-size:18px;line-height:1.2}
   #view-home > .sec-row{margin:0 9px 11px}
   #view-home > .sec-lbl{margin:24px 9px 10px!important;font-size:20px!important}
-  .note-wrap input{border-color:#e8ece8;border-radius:16px;min-height:58px;padding:14px 50px 14px 15px;
-    font-size:18px;background:var(--surface)}
-  .note-leaf{font-size:25px;right:18px}
   .total-card{border:none;background:var(--accent-soft);border-radius:18px;min-height:79px;padding:18px 23px;margin:17px 0}
   .tl{font-size:21px;font-weight:850}
   .ta{font-size:31px;font-weight:850;color:var(--accent)}
@@ -370,9 +362,6 @@
   .irow .idel svg{width:24px;height:24px}
   .add-item-dashed{width:calc(100% - 2px);margin:8px 1px 0;padding:12px;font-size:17px}
   #view-home > .sec-lbl{margin:19px 17px 8px!important;font-size:18px!important}
-  .note-wrap{margin:0 14px}
-  .note-wrap input{min-height:48px;padding-top:11px;padding-bottom:11px;font-size:16px}
-  .note-leaf{font-size:22px}
   .total-card{min-height:62px;margin:14px 14px 14px;padding:13px 20px}
   .tl{font-size:19px}
   .ta{font-size:29px}
@@ -416,7 +405,6 @@
   .amt-box .ia{font-size:19px}
   .add-item-dashed{margin-top:6px;padding:10px;font-size:16px}
   #view-home > .sec-lbl{margin-top:15px!important;margin-bottom:7px!important}
-  .note-wrap input{min-height:44px;font-size:15px;padding-top:9px;padding-bottom:9px}
   .total-card{min-height:57px;margin-top:12px;margin-bottom:12px}
   .save-btn-new{min-height:54px;font-size:19px}
   .qchip{font-size:11px;padding-left:5px;padding-right:5px;gap:3px}
@@ -468,9 +456,6 @@
   .amt-box .ia{font-size:14px;width:38px}
   .irow .idel svg{width:18px;height:18px}
   .add-item-dashed{margin-top:5px;padding:8px;font-size:13px;border-radius:12px}
-  .note-wrap{margin:0 10px}
-  .note-wrap input{min-height:38px;font-size:13px;padding:8px 36px 8px 11px;border-radius:11px}
-  .note-leaf{font-size:16px;right:12px}
   .total-card{min-height:44px;margin:10px 10px;padding:9px 14px;border-radius:13px}
   .tl{font-size:14px}
   .ta{font-size:20px}
@@ -492,7 +477,9 @@
   .add-expense-card .expense-card{background:transparent;border:none;box-shadow:none;
     border-radius:0;padding:0;margin-top:0}
   .add-expense-divider{height:1px;background:var(--line);margin:14px 2px}
-  .add-expense-card .note-wrap{margin-left:0;margin-right:0}
+  .add-expense-card .irow{background:transparent;border:none;border-radius:0;
+    border-bottom:1px solid var(--line);padding-left:0;padding-right:0}
+  .add-expense-card .irow:last-child{border-bottom:none}
   .add-expense-card .total-card{margin-left:0;margin-right:0}
   .add-expense-card .save-btn-new{width:100%;margin-left:0;margin-right:0}
 </style>
@@ -630,13 +617,6 @@
         <div class="items-card">
           <div id="itemLines"></div>
           <button class="add-item-dashed" id="addItemLine">+ Add another item</button>
-        </div>
-
-        <!-- Note -->
-        <div class="sec-lbl" style="margin:10px 0 6px">Note (optional)</div>
-        <div class="note-wrap">
-          <input id="shopNote" placeholder="e.g. items for guests, weekend stock up, etc." />
-          <span class="note-leaf">🌿</span>
         </div>
 
         <!-- Total -->
@@ -1099,7 +1079,7 @@ function showView(v){
 }
 $$('[data-back]').forEach(b=>b.onclick=()=>showView('home'));
 function resetShopForm(){
-  $('#shopDate').value = today(); shopItems = [{name:'',amount:''}]; $('#shopNote').value='';
+  $('#shopDate').value = today(); shopItems = [{name:'',amount:''}];
   renderItemLines(); updateShopTotal(); updateDateLabel();
 }
 function updateDateLabel(){
@@ -1143,7 +1123,7 @@ $('#saveShop').onclick = ()=> runOp(async ()=>{
   if (!items.length){ alert('Add at least one item with an amount.'); return; }
   const total = items.reduce((s,i)=>s+i.amount,0);
   const before = balance();
-  await opAddExpense({ date:$('#shopDate').value||today(), items, total, loggedBy:currentUser, note:$('#shopNote').value.trim() });
+  await opAddExpense({ date:$('#shopDate').value||today(), items, total, loggedBy:currentUser, note:'' });
   const after = before - total, thr = Store.data.settings.lowBalanceThreshold;
   if (after < thr && before >= thr) notify('Balance low', `Only ${fmt(after)} left with the cook.`);
   renderAll(); resetShopForm(); goHome();
