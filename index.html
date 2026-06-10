@@ -665,7 +665,7 @@ function renderHome(){
   const recent = [...Store.data.expenses].sort((x,y)=>(y.date+'').localeCompare(x.date+'')).slice(0,5);
   $('#recentList').innerHTML = recent.length
     ? recent.map(e=>expenseRow(e)).join('')
-    : `<div class="empty">No shopping logged yet.<br>Tap <b>Shop</b> below to add today's items.</div>`;
+    : `<div class="empty">No shopping logged yet.<br>Add today's items above and tap <b>Save Expenses</b>.</div>`;
 }
 function banner(type,title,msg){
   const icon = type==='danger'?'⚠️':type==='warn'?'🔔':'ℹ️';
