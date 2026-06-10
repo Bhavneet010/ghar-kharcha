@@ -35,12 +35,11 @@
   body{margin:0 auto;padding:0 0 84px;max-width:540px;min-height:100vh;color:var(--text);background:var(--bg);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;line-height:1.45}
-  header{position:sticky;top:0;z-index:20;padding:6px 12px 5px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;overflow:hidden}
-  .brand{display:flex;align-items:center;gap:7px;min-width:0;flex:1 1 auto}
-  .brand-text{min-width:0;overflow:hidden}
-  .brand b{font-size:14px;font-weight:700;letter-spacing:-.2px;white-space:nowrap}
-  .logo{width:29px;height:29px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
-    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;
+  header{position:sticky;top:0;z-index:20;padding:8px 12px 6px;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:8px;overflow:hidden}
+  .brand{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto}
+  .brand b{font-size:18px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
+  .logo{width:31px;height:31px;border-radius:50%;background:var(--accent);color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;
     border:2px solid var(--surface);box-shadow:0 0 0 1.5px var(--accent);flex-shrink:0}
   .whoami{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted)}
   .iconbtn{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--surface);
@@ -104,20 +103,15 @@
   .seg{display:flex;gap:8px;margin-top:6px}
   .seg .pill{margin:0;flex:1;justify-content:center}
   /* ── redesigned home ── */
-  .brand-sub{font-size:9px;color:var(--muted);margin-top:1px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-  .user-block{display:flex;align-items:center;gap:6px;flex-shrink:0}
-  .user-meta{text-align:right}
-  .user-name-lbl{font-size:11px;font-weight:700;color:var(--text);line-height:1.3}
-  .greeting-lbl{font-size:9px;color:var(--warn);margin-top:1px;white-space:nowrap;font-weight:500}
-  .avatar{width:29px;height:29px;border-radius:50%;background:var(--accent);
+  .avatar{width:31px;height:31px;border-radius:50%;background:var(--accent);
     color:var(--accent-ink);display:flex;align-items:center;justify-content:center;
     font-size:12px;font-weight:700;flex-shrink:0;cursor:pointer;padding:0;
     font-family:inherit;border:2px solid var(--surface);box-shadow:0 0 0 1.5px var(--accent)}
   .hero-panel{background:var(--hero-grad);border-radius:16px;padding:8px;
     display:flex;gap:8px;align-items:center;margin:2px 0 10px;
     box-shadow:0 6px 18px rgba(30,122,68,.20)}
-  .hero-illu{width:58px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-  .hero-illu svg{width:56px;height:56px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.18))}
+  .hero-illu{width:82px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .hero-illu svg{width:80px;height:80px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.18))}
   .hero-cards{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:7px;min-width:0}
   .stat-mini{background:var(--surface);border-radius:12px;padding:7px 9px;
     box-shadow:0 2px 10px rgba(0,0,0,.10);min-width:0}
@@ -130,20 +124,20 @@
     cursor:pointer;font-weight:600;margin-top:2px;display:inline-block;font-family:inherit}
   .home-form-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;
     padding:10px 10px 12px;margin:0 0 12px;box-shadow:var(--shadow)}
-  .form-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-  .form-card-title{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;letter-spacing:-.2px}
+  .form-card-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+  .form-card-title{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;
+    letter-spacing:-.2px;flex:1;min-width:0;white-space:nowrap}
   .title-check{width:23px;height:23px;border-radius:50%;background:var(--accent);
     color:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
   .title-check svg{width:12px;height:12px}
   .smart-add-btn{display:flex;align-items:center;gap:4px;background:var(--info-bg);
     border:1.5px solid var(--accent);color:var(--accent);border-radius:20px;
     padding:4px 9px;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit}
-  .dq-grid{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:start;margin-top:2px}
   .date-chip{display:flex;align-items:center;gap:4px;background:var(--surface);
-    border:1px solid var(--line);border-radius:9px;padding:5px 7px;margin-top:5px;width:fit-content}
+    border:1px solid var(--line);border-radius:9px;padding:5px 7px;width:fit-content;flex-shrink:0}
   .date-chip .cal{font-size:12px;line-height:1;flex-shrink:0}
   .date-chip-input{border:none;background:transparent;color:var(--text);font-size:11px;
-    font-weight:600;padding:0;font-family:inherit;outline:none;width:84px;min-width:0}
+    font-weight:600;padding:0;font-family:inherit;outline:none;width:88px;min-width:0}
   .date-chip-input::-webkit-calendar-picker-indicator{display:none}
   .quick-chips-row{display:flex;gap:5px;overflow-x:auto;padding:5px 0 2px;
     scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -217,18 +211,9 @@
   <header>
     <div class="brand">
       <span class="logo">₹</span>
-      <div class="brand-text">
-        <b>Ghar Kharcha</b>
-        <div class="brand-sub">Smart way to manage your home expenses</div>
-      </div>
+      <b>Ghar Kharcha</b>
     </div>
-    <div class="user-block">
-      <div class="user-meta">
-        <div class="user-name-lbl" id="whoLabel"></div>
-        <div class="greeting-lbl" id="greetingLabel">Good morning! ☀️</div>
-      </div>
-      <button class="avatar" id="switchUser" aria-label="Switch user"></button>
-    </div>
+    <button class="avatar" id="switchUser" aria-label="Switch user"></button>
   </header>
   <main>
     <!-- HOME -->
@@ -236,19 +221,44 @@
       <!-- Hero: green gradient panel with grocery bag + stat cards -->
       <div class="hero-panel">
         <div class="hero-illu" aria-hidden="true">
-          <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="25" cy="27" r="10" fill="#8bc34a"/>
-            <circle cx="21" cy="23" r="5" fill="#a5d36c"/>
-            <circle cx="30" cy="22" r="5" fill="#7cb342"/>
-            <ellipse cx="46" cy="21" rx="6" ry="12" transform="rotate(24 46 21)" fill="#f0b952"/>
-            <ellipse cx="46" cy="17" rx="4" ry="7" transform="rotate(24 46 17)" fill="#f7d08a"/>
-            <ellipse cx="58" cy="28" rx="4.5" ry="10" transform="rotate(-18 58 28)" fill="#e8734a"/>
-            <path d="M60 17l3-5M62 19l5-3" stroke="#5a9e3d" stroke-width="2.5" stroke-linecap="round"/>
-            <path d="M17 31h46l-4.4 40.2c-.3 2.7-2.5 4.8-5.2 4.8H26.6c-2.7 0-4.9-2.1-5.2-4.8L17 31z" fill="#2e7d46"/>
-            <path d="M17 31h46l-1 9.5H18L17 31z" fill="#246338"/>
-            <path d="M30 31c0-7.5 4.3-12 10-12s10 4.5 10 12" stroke="#1c5530" stroke-width="3.4" fill="none" stroke-linecap="round"/>
-            <circle cx="53" cy="58" r="12.5" fill="#ffd54f" stroke="#e0a317" stroke-width="2.5"/>
-            <text x="53" y="63.5" text-anchor="middle" font-size="15" font-weight="700" fill="#8c6400" font-family="system-ui,sans-serif">₹</text>
+          <svg viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="gkBag" x1="24" y1="36" x2="78" y2="94" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#fbe2b8"/><stop offset="1" stop-color="#e3a85c"/>
+              </linearGradient>
+              <linearGradient id="gkCoin" x1="56" y1="58" x2="80" y2="88" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#ffe082"/><stop offset="1" stop-color="#f6b93b"/>
+              </linearGradient>
+            </defs>
+            <!-- sparkles -->
+            <path d="M86 26l1.7 4.3 4.3 1.7-4.3 1.7-1.7 4.3-1.7-4.3-4.3-1.7 4.3-1.7z" fill="#ffd54f"/>
+            <path d="M12 50l1.2 3 3 1.2-3 1.2-1.2 3-1.2-3-3-1.2 3-1.2z" fill="#fff" opacity=".75"/>
+            <!-- leafy greens -->
+            <circle cx="29" cy="30" r="11" fill="#7cb342"/>
+            <circle cx="23" cy="25" r="6.5" fill="#9ccc65"/>
+            <circle cx="36" cy="23" r="6.5" fill="#8bc34a"/>
+            <circle cx="31" cy="34" r="6" fill="#689f38"/>
+            <!-- baguette -->
+            <ellipse cx="55" cy="21" rx="7" ry="15" transform="rotate(26 55 21)" fill="#e8b04b"/>
+            <path d="M50 13l5.5-2.5M52 19l5.5-2.5M54 25l5.5-2.5" stroke="#c68b2e" stroke-width="2" stroke-linecap="round"/>
+            <!-- carrot -->
+            <path d="M67 36c-1.5-8.5 1.5-15.5 5-19l6.5 4.5c-1.5 4.5-5.5 10.5-11.5 14.5z" fill="#f4793b"/>
+            <path d="M73 16l3.5-6M76 19l6-4M70 14l1-6.5" stroke="#5a9e3d" stroke-width="2.4" stroke-linecap="round"/>
+            <!-- tomato -->
+            <circle cx="19" cy="40" r="6.5" fill="#e5533d"/>
+            <path d="M16 35.5c2-1.5 4.5-1.5 6 0" stroke="#4f8f33" stroke-width="2" stroke-linecap="round"/>
+            <!-- bag -->
+            <path d="M21 37h54l-5.3 47.5c-.4 3.2-3 5.5-6.2 5.5H32.5c-3.2 0-5.8-2.3-6.2-5.5L21 37z" fill="url(#gkBag)"/>
+            <path d="M21 37h54l-1.2 11H22.2L21 37z" fill="#c98b46"/>
+            <path d="M27 48l3.5 36M69 48l-3.5 36" stroke="#d49a55" stroke-width="1.6" opacity=".7"/>
+            <path d="M36 37c0-9.5 5-15 12-15s12 5.5 12 15" stroke="#8d5a24" stroke-width="4" fill="none" stroke-linecap="round"/>
+            <!-- leaf badge on bag -->
+            <path d="M41 60c5-9 13-10 16-10-1 7-6 15-16 15z" fill="#2e7d46"/>
+            <path d="M43 64c4-5 9-8 12-9" stroke="#9ccc65" stroke-width="1.6" stroke-linecap="round"/>
+            <!-- coin -->
+            <circle cx="67" cy="74" r="14.5" fill="url(#gkCoin)" stroke="#d99518" stroke-width="2.6"/>
+            <circle cx="67" cy="74" r="10" fill="none" stroke="#e8ae33" stroke-width="1.5"/>
+            <text x="67" y="79.5" text-anchor="middle" font-size="16" font-weight="700" fill="#8c6400" font-family="system-ui,sans-serif">₹</text>
           </svg>
         </div>
         <div class="hero-cards">
@@ -272,27 +282,20 @@
         <div class="form-card-hdr">
           <div class="form-card-title">
             <span class="title-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-            Add Grocery Expenses
+            Add Expenses
           </div>
           <button class="smart-add-btn" id="smartAddBtn">✨ Smart Add</button>
+          <div class="date-chip">
+            <span class="cal">📅</span>
+            <input type="date" id="shopDate" class="date-chip-input" />
+          </div>
         </div>
 
-        <div class="dq-grid">
-          <div>
-            <div class="sec-lbl">Date</div>
-            <div class="date-chip">
-              <span class="cal">📅</span>
-              <input type="date" id="shopDate" class="date-chip-input" />
-            </div>
-          </div>
-          <div style="min-width:0">
-            <div class="sec-row" style="margin:0">
-              <span class="sec-lbl">Quick Add</span>
-              <button class="link-btn" id="seeAllChips">See all</button>
-            </div>
-            <div id="quickChips" class="quick-chips-row"></div>
-          </div>
+        <div class="sec-row" style="margin-top:0">
+          <span class="sec-lbl">Quick Add</span>
+          <button class="link-btn" id="seeAllChips">See all</button>
         </div>
+        <div id="quickChips" class="quick-chips-row"></div>
 
         <div class="sec-row">
           <span class="sec-lbl">Items &amp; Amounts</span>
@@ -569,13 +572,6 @@ function itemEmoji(name){
   if(n.includes('water')) return '💧';
   return '🛒';
 }
-function greeting(){
-  const h=new Date().getHours();
-  if(h<12) return 'Good morning! ☀️';
-  if(h<17) return 'Good afternoon! 🌤️';
-  if(h<20) return 'Good evening! 🌅';
-  return 'Good night! 🌙';
-}
 const today = () => new Date().toISOString().slice(0,10);
 const thisMonth = () => new Date().toISOString().slice(0,7);
 const personById = (id) => Store.data.people.find(p=>p.id===id) || {name:'?'};
@@ -604,9 +600,9 @@ function renderAll(){
   renderSalList(); renderHistory(); renderPaidBySegs(); renderSyncBadge();
   $('#setThreshold').value = Store.data.settings.lowBalanceThreshold;
   const p = personById(currentUser);
-  $('#whoLabel').textContent = p.name;
-  $('#switchUser').textContent = (p.name||'?')[0].toUpperCase();
-  const g=$('#greetingLabel'); if(g) g.textContent=greeting();
+  const av = $('#switchUser');
+  av.textContent = (p.name||'?')[0].toUpperCase();
+  av.title = p.name || '';
 }
 function renderSyncBadge(){
   const b = $('#syncBadge'); const info = $('#syncInfo');
@@ -681,7 +677,7 @@ let chipsExpanded = false;
 function renderQuickChips(){
   const box=$('#quickChips'); if(!box) return;
   box.classList.toggle('wrap', chipsExpanded);
-  const items = chipsExpanded ? Store.data.commonItems : Store.data.commonItems.slice(0,3);
+  const items = chipsExpanded ? Store.data.commonItems : Store.data.commonItems.slice(0,4);
   const seeBtn=$('#seeAllChips');
   if(seeBtn) seeBtn.textContent = chipsExpanded ? 'Show less' : 'See all';
   box.innerHTML = items.map(n=>
