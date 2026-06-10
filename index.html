@@ -153,13 +153,11 @@
     scrollbar-width:none;-webkit-overflow-scrolling:touch}
   .quick-chips-row::-webkit-scrollbar{display:none}
   .quick-chips-row.wrap{flex-wrap:wrap;overflow:visible}
-  .qchip{display:inline-flex;align-items:center;gap:4px;background:var(--surface);
-    border:1px solid var(--line);border-radius:16px;padding:4px 9px;font-size:11px;
-    font-weight:500;white-space:nowrap;cursor:pointer;color:var(--text);flex-shrink:0;font-family:inherit}
-  .qchip .ci{font-size:13px;line-height:1}
-  .qchip-more{width:26px;height:26px;border-radius:50%;background:var(--surface);
-    border:1px solid var(--line);font-size:15px;color:var(--muted);cursor:pointer;
-    flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit}
+  .qchip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:7px 4px;
+    font-size:9px;font-weight:500;white-space:nowrap;cursor:pointer;color:var(--text);
+    flex-shrink:0;font-family:inherit;width:50px}
+  .qchip .ci{font-size:18px;line-height:1}
   .irow{display:flex;align-items:center;gap:6px;background:var(--inset);
     border:1px solid var(--line);border-radius:11px;padding:5px 6px;margin-bottom:5px}
   .irow .ii{font-size:14px;width:27px;height:27px;flex-shrink:0;line-height:1;
@@ -275,10 +273,8 @@
   .link-btn{font-size:16px;font-weight:750;color:var(--accent)}
   .link-btn.danger{font-size:16px;color:var(--danger)}
   .quick-chips-row{gap:9px;padding:8px 0 2px}
-  .qchip{min-height:45px;border-radius:24px;border-color:#e4e8e2;background:var(--surface);
-    box-shadow:0 2px 6px rgba(16,24,40,.05);font-size:17px;font-weight:700;padding:8px 15px;gap:8px}
-  .qchip .ci{font-size:21px}
-  .qchip-more{width:45px;height:45px;font-size:31px;line-height:1;color:var(--accent);border-color:#e4e8e2}
+  .qchip{border-color:#e4e8e2;background:var(--surface);
+    box-shadow:0 2px 6px rgba(16,24,40,.05);font-weight:700}
   .items-card{border-radius:20px;border-color:#edf0eb;padding:0;margin-top:14px;margin-bottom:16px;
     box-shadow:0 12px 24px rgba(16,24,40,.06)}
   .irow{gap:12px;background:var(--surface);border-color:#e8ece8;border-radius:17px;margin:0;padding:9px 11px;min-height:68px}
@@ -346,9 +342,6 @@
   .qa-card{padding:15px 13px 11px;margin-bottom:23px}
   .qa-card .sec-lbl{font-size:17px}
   .quick-chips-row{gap:8px;padding-top:7px}
-  .qchip{min-height:38px;font-size:16px;padding:6px 14px}
-  .qchip .ci{font-size:19px}
-  .qchip-more{width:38px;height:38px;font-size:27px}
   .sec-lbl{font-size:19px}
   .expense-card{background:var(--exp-bg);border:1px solid var(--exp-line);border-radius:20px;
     padding:0 0 15px;margin-top:12px;box-shadow:0 12px 24px rgba(16,24,40,.06)}
@@ -391,9 +384,6 @@
   .date-chip #dateLabel{font-size:14px}
   .qa-card{padding:12px 13px 9px;margin-bottom:16px}
   .qa-card .sec-row{margin-bottom:6px}
-  .qchip{min-height:34px;font-size:15px;padding:5px 13px}
-  .qchip .ci{font-size:18px}
-  .qchip-more{width:34px;height:34px;font-size:24px}
   .quick-chips-row{padding-top:4px}
   #view-home > .sec-row{margin-bottom:8px}
   .expense-card{margin-top:8px;padding-bottom:12px}
@@ -407,9 +397,6 @@
   #view-home > .sec-lbl{margin-top:15px!important;margin-bottom:7px!important}
   .total-card{min-height:57px;margin-top:12px;margin-bottom:12px}
   .save-btn-new{min-height:54px;font-size:19px}
-  .qchip{font-size:11px;padding-left:5px;padding-right:5px;gap:3px}
-  .qchip .ci{font-size:13px}
-  .qchip-more{width:32px;height:32px}
   .quick-chips-row{gap:5px}
 
   /* Compact phone sizing — smaller text & padding everywhere on home */
@@ -443,8 +430,6 @@
   .qa-card .sec-lbl{font-size:14px}
   .link-btn{font-size:12px}
   .link-btn.danger{font-size:12px}
-  .qchip{min-height:28px}
-  .qchip-more{width:28px;height:28px;font-size:20px}
   #view-home > .sec-lbl{margin:11px 10px 5px!important;font-size:14px!important}
   #view-home > .sec-row{margin:0 4px 6px}
   .expense-card{margin-top:6px;padding-bottom:10px;border-radius:16px}
@@ -504,9 +489,9 @@
   .qa-card .sec-lbl{font-size:13px}
   .link-btn{font-size:11px}
   .link-btn.danger{font-size:11px}
-  .qchip{min-height:26px;padding:4px 5px;font-size:10px}
-  .qchip .ci{font-size:12px}
-  .qchip-more{width:26px;height:26px;font-size:18px}
+  .qchip{width:46px;padding:6px 3px;font-size:9px}
+  .qchip .ci{font-size:17px}
+  .qchip-label{overflow:hidden;text-overflow:ellipsis;max-width:100%}
   #view-home > .sec-lbl{font-size:13px!important}
   .add-expense-card{padding:11px;margin-bottom:13px}
   .irow{min-height:36px;padding:3px 6px;gap:7px}
@@ -1039,15 +1024,12 @@ let chipsExpanded = false;
 function renderQuickChips(){
   const box=$('#quickChips'); if(!box) return;
   box.classList.toggle('wrap', chipsExpanded);
-  const items = chipsExpanded ? Store.data.commonItems : Store.data.commonItems.slice(0,4);
+  const items = Store.data.commonItems;
   const seeBtn=$('#seeAllChips');
   if(seeBtn) seeBtn.textContent = chipsExpanded ? 'Show less' : 'See all';
   box.innerHTML = items.map(n=>
-    `<button class="qchip" data-item="${n}"><span class="ci">${itemEmoji(n)}</span>+ ${n}</button>`
-  ).join('') + (chipsExpanded?'':
-    `<button class="qchip-more" id="qchipMore">+</button>`);
-  const more=$('#qchipMore');
-  if(more) more.onclick=()=>{ chipsExpanded=true; renderQuickChips(); };
+    `<button class="qchip" data-item="${n}"><span class="ci">${itemEmoji(n)}</span><span class="qchip-label">${n}</span></button>`
+  ).join('');
 }
 function renderItemLines(){
   const box = $('#itemLines'); box.innerHTML='';
@@ -1142,7 +1124,6 @@ $('#shopDate').addEventListener('change', updateDateLabel);
 $('#viewSummaryBtn').onclick = ()=> showView('history');
 
 $('#quickChips').addEventListener('click',(e)=>{
-  if(e.target.closest('#qchipMore')) return;
   const btn = e.target.closest('[data-item]'); if(!btn) return;
   let line = shopItems.find(i=>!i.name);
   if (line) line.name = btn.dataset.item; else shopItems.push({name:btn.dataset.item,amount:''});
