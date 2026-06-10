@@ -483,6 +483,18 @@
   .er-icon,.er-icon svg{width:66px;height:47px}
   .empty-recent .er-title{font-size:14px}
   .empty-recent .er-sub{font-size:12px}
+
+  /* Unified Add Expense card — Quick Add + Items & Amounts as one piece */
+  .add-expense-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;
+    padding:13px;margin-bottom:16px;box-shadow:0 12px 24px rgba(16,24,40,.06)}
+  .add-expense-card .qa-card{background:transparent;border:none;box-shadow:none;
+    border-radius:0;padding:0;margin-bottom:0}
+  .add-expense-card .expense-card{background:transparent;border:none;box-shadow:none;
+    border-radius:0;padding:0;margin-top:0}
+  .add-expense-divider{height:1px;background:var(--line);margin:14px 2px}
+  .add-expense-card .note-wrap{margin-left:0;margin-right:0}
+  .add-expense-card .total-card{margin-left:0;margin-right:0}
+  .add-expense-card .save-btn-new{width:100%;margin-left:0;margin-right:0}
 </style>
 </head>
 <body>
@@ -596,43 +608,48 @@
         </div>
       </div>
 
-      <!-- Quick Add card -->
-      <div class="qa-card">
-        <div class="sec-row" style="margin-top:0">
-          <span class="sec-lbl">Quick Add</span>
-          <button class="link-btn" id="seeAllChips">See all</button>
+      <!-- Add Expense: Quick Add + Items & Amounts as a single unit -->
+      <div class="add-expense-card">
+        <!-- Quick Add card -->
+        <div class="qa-card">
+          <div class="sec-row" style="margin-top:0">
+            <span class="sec-lbl">Quick Add</span>
+            <button class="link-btn" id="seeAllChips">See all</button>
+          </div>
+          <div id="quickChips" class="quick-chips-row"></div>
         </div>
-        <div id="quickChips" class="quick-chips-row"></div>
-      </div>
 
-      <!-- Items -->
-      <div class="sec-row">
-        <span class="sec-lbl">Items &amp; Amounts</span>
-        <button class="link-btn danger" id="clearAllItems">Clear all</button>
-      </div>
-      <div class="expense-card">
-      <div class="items-card">
-        <div id="itemLines"></div>
-        <button class="add-item-dashed" id="addItemLine">+ Add another item</button>
-      </div>
+        <div class="add-expense-divider"></div>
 
-      <!-- Note -->
-      <div class="sec-lbl" style="margin:10px 0 6px">Note (optional)</div>
-      <div class="note-wrap">
-        <input id="shopNote" placeholder="e.g. items for guests, weekend stock up, etc." />
-        <span class="note-leaf">🌿</span>
-      </div>
+        <!-- Items -->
+        <div class="sec-row">
+          <span class="sec-lbl">Items &amp; Amounts</span>
+          <button class="link-btn danger" id="clearAllItems">Clear all</button>
+        </div>
+        <div class="expense-card">
+        <div class="items-card">
+          <div id="itemLines"></div>
+          <button class="add-item-dashed" id="addItemLine">+ Add another item</button>
+        </div>
 
-      <!-- Total -->
-      <div class="total-card">
-        <span class="tl">Total Amount</span>
-        <span id="shopTotal" class="ta">₹0</span>
-      </div>
+        <!-- Note -->
+        <div class="sec-lbl" style="margin:10px 0 6px">Note (optional)</div>
+        <div class="note-wrap">
+          <input id="shopNote" placeholder="e.g. items for guests, weekend stock up, etc." />
+          <span class="note-leaf">🌿</span>
+        </div>
 
-      <button class="save-btn-new" id="saveShop">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
-        Save Expenses
-      </button>
+        <!-- Total -->
+        <div class="total-card">
+          <span class="tl">Total Amount</span>
+          <span id="shopTotal" class="ta">₹0</span>
+        </div>
+
+        <button class="save-btn-new" id="saveShop">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg>
+          Save Expenses
+        </button>
+        </div>
       </div>
 
       <div class="recent-section">
