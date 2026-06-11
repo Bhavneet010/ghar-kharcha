@@ -1,11 +1,12 @@
 // Service worker — offline caching for the PWA.
 // Bump CACHE version whenever you change app files so clients update.
-const CACHE = 'ghar-kharcha-v30';
+const CACHE = 'ghar-kharcha-v31';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
-  './icon.svg'
+  './icon.svg',
+  './icon-maskable.svg'
 ];
 
 self.addEventListener('install', (e) => {
