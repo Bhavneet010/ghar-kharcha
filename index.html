@@ -98,6 +98,7 @@
   .seg{display:flex;gap:8px;margin-top:6px}
   .seg .pill{margin:0;flex:1;justify-content:center}
   /* ── redesigned home ── */
+  .header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
   .avatar-wrap{position:relative;flex-shrink:0}
   .avatar{width:31px;height:31px;border-radius:50%;background:var(--accent);
     color:var(--accent-ink);display:flex;align-items:center;justify-content:center;
@@ -397,7 +398,7 @@
   #view-home > .sec-lbl{margin-top:15px!important;margin-bottom:7px!important}
   .total-card{min-height:57px;margin-top:12px;margin-bottom:12px}
   .save-btn-new{min-height:54px;font-size:19px}
-  .quick-chips-row{gap:5px}
+  .quick-chips-row{gap:4px}
 
   /* Compact phone sizing — smaller text & padding everywhere on home */
   body{padding-bottom:calc(env(safe-area-inset-bottom) + 18px)}
@@ -489,7 +490,7 @@
   .qa-card .sec-lbl{font-size:13px}
   .link-btn{font-size:11px}
   .link-btn.danger{font-size:11px}
-  .qchip{width:46px;padding:6px 3px;font-size:9px}
+  .qchip{width:44px;padding:6px 2px;font-size:9px}
   .qchip .ci{font-size:17px}
   .qchip-label{overflow:hidden;text-overflow:ellipsis;max-width:100%}
   #view-home > .sec-lbl{font-size:13px!important}
@@ -539,11 +540,14 @@
       <span class="logo">₹</span>
       <b>Ghar Kharcha</b>
     </div>
-    <div class="avatar-wrap">
-      <button class="avatar" id="switchUser" aria-label="Account menu" aria-haspopup="true"></button>
-      <div class="avatar-menu hidden" id="avatarMenu">
-        <button id="menuSettings">⚙️ Settings</button>
-        <button id="menuSwitch">👤 Change user</button>
+    <div class="header-actions">
+      <button class="iconbtn" id="themeToggleHeader" aria-label="Toggle theme"></button>
+      <div class="avatar-wrap">
+        <button class="avatar" id="switchUser" aria-label="Account menu" aria-haspopup="true"></button>
+        <div class="avatar-menu hidden" id="avatarMenu">
+          <button id="menuSettings">⚙️ Settings</button>
+          <button id="menuSwitch">👤 Change user</button>
+        </div>
       </div>
     </div>
   </header>
@@ -1214,9 +1218,12 @@ function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
   try{ localStorage.setItem('ghk_theme', t); }catch(e){}
   const m = document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='dark' ? '#0f141b' : '#f7f5ef');
-  const btn = $('#themeToggle'); if(btn) btn.innerHTML = t==='dark' ? sunSVG : moonSVG;
+  const icon = t==='dark' ? sunSVG : moonSVG;
+  const btn = $('#themeToggle'); if(btn) btn.innerHTML = icon;
+  const btnHeader = $('#themeToggleHeader'); if(btnHeader) btnHeader.innerHTML = icon;
 }
 $('#themeToggle').onclick = ()=> applyTheme(currentTheme()==='dark' ? 'light' : 'dark');
+$('#themeToggleHeader').onclick = ()=> applyTheme(currentTheme()==='dark' ? 'light' : 'dark');
 applyTheme(currentTheme());
 
 $('#switchUser').onclick = (e)=>{ e.stopPropagation(); $('#avatarMenu').classList.toggle('hidden'); };
