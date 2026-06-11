@@ -1025,10 +1025,20 @@ function prettyDate(d){ return new Date(d+'T00:00').toLocaleDateString('en-IN',{
 
 let shopItems = [];
 let chipsExpanded = false;
+function itemUsageCounts(){
+  const counts = {};
+  Store.data.expenses.forEach(e=>(e.items||[]).forEach(i=>{
+    const k=(i.name||'').trim().toLowerCase(); if(k) counts[k]=(counts[k]||0)+1;
+  }));
+  return counts;
+}
 function renderQuickChips(){
   const box=$('#quickChips'); if(!box) return;
   box.classList.toggle('wrap', chipsExpanded);
-  const items = Store.data.commonItems;
+  const counts = itemUsageCounts();
+  // most-used items first; ties keep the saved order (sort is stable)
+  const items = [...Store.data.commonItems]
+    .sort((a,b)=>(counts[b.trim().toLowerCase()]||0)-(counts[a.trim().toLowerCase()]||0));
   const seeBtn=$('#seeAllChips');
   if(seeBtn) seeBtn.textContent = chipsExpanded ? 'Show less' : 'See all';
   box.innerHTML = items.map(n=>

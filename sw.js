@@ -1,6 +1,6 @@
 // Service worker — offline caching for the PWA.
 // Bump CACHE version whenever you change app files so clients update.
-const CACHE = 'ghar-kharcha-v32';
+const CACHE = 'ghar-kharcha-v33';
 const ASSETS = [
   './',
   './index.html',
