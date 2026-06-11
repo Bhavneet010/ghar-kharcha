@@ -731,13 +731,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         Home</button>
       <div class="card">
-        <h3>Appearance</h3>
-        <div class="row between">
-          <span>Dark mode</span>
-          <button class="iconbtn" id="themeToggle" aria-label="Toggle theme"></button>
-        </div>
-      </div>
-      <div class="card">
         <h3>Low-balance alert</h3>
         <label>Warn me when balance falls below</label>
         <input type="number" id="setThreshold" inputmode="numeric" />
@@ -754,6 +747,14 @@
       <div class="card">
         <h3>People</h3>
         <div id="peopleList"></div>
+        <label>Add a person</label>
+        <input id="newPersonName" placeholder="Name" />
+        <label>Their role</label>
+        <div class="seg" id="newPersonRole">
+          <button class="pill active" data-role="payer">Pays &amp; manages</button>
+          <button class="pill" data-role="cook">Cook · logs only</button>
+        </div>
+        <button class="btn sec" id="addPerson">Add person</button>
       </div>
       <div class="card">
         <h3>Backup</h3>
@@ -801,19 +802,20 @@ const USER_KEY = 'ghk_user';
 let currentUser = localStorage.getItem(USER_KEY) || null;
 
 async function loadData(){
+  Store.loadCache();
   if (USE_CLOUD && sb){
-    try { await cloudFetchAll(); online = true; subscribeRealtime(); }
-    catch(e){ console.warn('Cloud load failed, using local cache', e); online = false; Store.loadCache(); }
-  } else { Store.loadCache(); }
+    try { await flushPendingOps(); await cloudFetchAll(); subscribeRealtime(); }
+    catch(e){ console.warn('Cloud load failed, using local cache', e); online = false; }
+  }
 }
 
 async function cloudFetchAll(){
-  const [adv, exp, sal, cfg] = await Promise.all([
+  const [adv, exp, sal, cfg] = await withTimeout(Promise.all([
     sb.from('advances').select('*'),
     sb.from('expenses').select('*'),
     sb.from('salaries').select('*'),
     sb.from('app_config').select('*').eq('id',1).maybeSingle()
-  ]);
+  ]));
   if (adv.error||exp.error||sal.error||cfg.error) throw (adv.error||exp.error||sal.error||cfg.error);
   Store.data.topups   = (adv.data||[]).map(r=>({id:r.id,date:r.date,amount:Number(r.amount),paidBy:r.paid_by,note:r.note||''}));
   Store.data.expenses = (exp.data||[]).map(r=>({id:r.id,date:r.date,items:r.items||[],total:Number(r.total),loggedBy:r.logged_by,note:r.note||''}));
@@ -821,9 +823,30 @@ async function cloudFetchAll(){
   if (cfg.data){
     Store.data.settings.lowBalanceThreshold = Number(cfg.data.low_balance_threshold);
     Store.data.commonItems = (cfg.data.common_items&&cfg.data.common_items.length)?cfg.data.common_items:DEFAULT_DATA.commonItems;
+    if (cfg.data.people && cfg.data.people.length) Store.data.people = cfg.data.people;
   }
+  applyPendingToStore();
   Store.cache();
   online = true;
+}
+
+// Cloud rows replace the local arrays wholesale, so re-apply anything that is
+// still waiting in the sync queue or it would vanish from the screen.
+function applyPendingToStore(){
+  pendingOps.forEach((op,i)=>{
+    const pid = 'pending-'+i;
+    if (op.type==='advance') Store.data.topups.push({ id:pid, ...op.payload });
+    else if (op.type==='expense') Store.data.expenses.push({ id:pid, ...op.payload });
+    else if (op.type==='salary'){
+      const ex = Store.data.salaries.find(s=>s.month===op.payload.month);
+      if (ex){ ex.amount=op.payload.amount; ex.paidBy=op.payload.paidBy; }
+      else Store.data.salaries.push({ id:pid, ...op.payload });
+    } else if (op.type==='config'){
+      if (op.key==='low_balance_threshold') Store.data.settings.lowBalanceThreshold = op.value;
+      else if (op.key==='common_items') Store.data.commonItems = op.value;
+      else if (op.key==='people') Store.data.people = op.value;
+    }
+  });
 }
 
 let rtBound = false;
@@ -845,41 +868,95 @@ async function runOp(fn){
 }
 function setButtonsDisabled(v){ ['#saveShop','#saveTop','#saveSal'].forEach(s=>{const b=$(s); if(b)b.disabled=v;}); }
 
+// ---- Writes are local-first: saved on this phone immediately, then synced ----
+// to the cloud. If the cloud is unreachable the op waits in a queue and is
+// retried automatically, so an entry is never lost or silently dropped.
+const PENDING_KEY = 'ghk_pending_v1';
+let pendingOps = [];
+try{ pendingOps = JSON.parse(localStorage.getItem(PENDING_KEY)) || []; }catch(e){}
+function savePendingOps(){ try{ localStorage.setItem(PENDING_KEY, JSON.stringify(pendingOps)); }catch(e){} }
+function queueOp(op){
+  if (op.type==='config') pendingOps = pendingOps.filter(p=>!(p.type==='config' && p.key===op.key));
+  pendingOps.push(op); savePendingOps();
+}
+function withTimeout(promise, ms=12000){
+  return Promise.race([promise, new Promise((_,rej)=>setTimeout(()=>rej(new Error('Request timed out')), ms))]);
+}
+async function performCloudOp(op){
+  let res;
+  if (op.type==='advance'){ const o=op.payload;
+    res = await withTimeout(sb.from('advances').insert({ date:o.date, amount:o.amount, paid_by:o.paidBy, note:o.note||'' }));
+  } else if (op.type==='expense'){ const o=op.payload;
+    res = await withTimeout(sb.from('expenses').insert({ date:o.date, items:o.items, total:o.total, logged_by:o.loggedBy, note:o.note }));
+  } else if (op.type==='salary'){ const o=op.payload;
+    res = await withTimeout(sb.from('salaries').upsert({ month:o.month, amount:o.amount, paid_by:o.paidBy }, { onConflict:'month' }));
+  } else if (op.type==='config'){
+    res = await withTimeout(sb.from('app_config').update({ [op.key]:op.value }).eq('id',1));
+  }
+  if (res && res.error) throw res.error;
+}
+let flushing = false;
+async function flushPendingOps(){
+  if (!(USE_CLOUD && sb) || flushing || !pendingOps.length) return;
+  flushing = true;
+  try{
+    while (pendingOps.length){
+      await performCloudOp(pendingOps[0]);
+      pendingOps.shift(); savePendingOps();
+    }
+    try{ await cloudFetchAll(); }catch(e){}
+    renderAll();
+  }catch(e){ console.warn('Sync still failing, will retry', e); online = false; renderSyncGlow(); }
+  finally{ flushing = false; }
+}
+let syncNoticeShown = false;
+function syncNotice(err){
+  if (syncNoticeShown) return; syncNoticeShown = true;
+  alert('Saved on this phone.\n\nCloud sync failed though ('+((err&&(err.message||err))||'no connection')+'), so it may not show on other phones yet. The app will keep retrying automatically.');
+}
+async function cloudWrite(op){
+  if (!USE_CLOUD) return;
+  if (!sb){ queueOp(op); online = false; renderSyncGlow(); return; }
+  if (pendingOps.length){
+    queueOp(op); await flushPendingOps();
+    if (pendingOps.length) syncNotice();
+    return;
+  }
+  try{ await performCloudOp(op); }
+  catch(e){
+    console.warn('Cloud save failed, queued for sync', e);
+    queueOp(op); online = false; renderSyncGlow(); syncNotice(e); return;
+  }
+  online = true;
+  try{ await cloudFetchAll(); }catch(e){}
+}
+
 async function opAddExpense(o){
-  if (USE_CLOUD && sb){
-    const { error } = await sb.from('expenses').insert(
-      { date:o.date, items:o.items, total:o.total, logged_by:o.loggedBy, note:o.note });
-    if (error) throw error; await cloudFetchAll();
-  } else { Store.data.expenses.push({ id:Store.id(), ...o }); Store.cache(); }
+  Store.data.expenses.push({ id:Store.id(), ...o }); Store.cache();
+  await cloudWrite({ type:'expense', payload:o });
 }
 async function opAddAdvance(o){
-  if (USE_CLOUD && sb){
-    const { error } = await sb.from('advances').insert(
-      { date:o.date, amount:o.amount, paid_by:o.paidBy, note:o.note||'' });
-    if (error) throw error; await cloudFetchAll();
-  } else { Store.data.topups.push({ id:Store.id(), ...o }); Store.cache(); }
+  Store.data.topups.push({ id:Store.id(), ...o }); Store.cache();
+  await cloudWrite({ type:'advance', payload:o });
 }
 async function opUpsertSalary(o){
-  if (USE_CLOUD && sb){
-    const { error } = await sb.from('salaries').upsert(
-      { month:o.month, amount:o.amount, paid_by:o.paidBy }, { onConflict:'month' });
-    if (error) throw error; await cloudFetchAll();
-  } else {
-    const ex = Store.data.salaries.find(s=>s.month===o.month);
-    if (ex){ ex.amount=o.amount; ex.paidBy=o.paidBy; }
-    else Store.data.salaries.push({ id:Store.id(), ...o });
-    Store.cache();
-  }
+  const ex = Store.data.salaries.find(s=>s.month===o.month);
+  if (ex){ ex.amount=o.amount; ex.paidBy=o.paidBy; }
+  else Store.data.salaries.push({ id:Store.id(), ...o });
+  Store.cache();
+  await cloudWrite({ type:'salary', payload:o });
 }
 async function opSetThreshold(n){
-  Store.data.settings.lowBalanceThreshold = n;
-  if (USE_CLOUD && sb){ const {error}=await sb.from('app_config').update({low_balance_threshold:n}).eq('id',1); if(error)throw error; }
-  else Store.cache();
+  Store.data.settings.lowBalanceThreshold = n; Store.cache();
+  await cloudWrite({ type:'config', key:'low_balance_threshold', value:n });
 }
 async function opSetCommonItems(arr){
-  Store.data.commonItems = arr;
-  if (USE_CLOUD && sb){ const {error}=await sb.from('app_config').update({common_items:arr}).eq('id',1); if(error)throw error; }
-  else Store.cache();
+  Store.data.commonItems = arr; Store.cache();
+  await cloudWrite({ type:'config', key:'common_items', value:arr });
+}
+async function opSetPeople(arr){
+  Store.data.people = arr; Store.cache();
+  await cloudWrite({ type:'config', key:'people', value:arr });
 }
 
 const $ = (s, r=document) => r.querySelector(s);
@@ -948,8 +1025,9 @@ function renderSyncGlow(){
   av.classList.remove('sync-ok','sync-bad');
   let status = 'local only';
   if (USE_CLOUD){
-    av.classList.add(online ? 'sync-ok' : 'sync-bad');
-    status = online ? 'synced' : 'offline';
+    const ok = online && !pendingOps.length;
+    av.classList.add(ok ? 'sync-ok' : 'sync-bad');
+    status = ok ? 'synced' : pendingOps.length ? pendingOps.length+' waiting to sync' : 'offline';
   }
   av.title = (personById(currentUser).name || '') + ' · ' + status;
 }
@@ -1113,7 +1191,8 @@ function renderItemEditor(){
 function renderPeople(){
   $('#peopleList').innerHTML = Store.data.people.map(p=>
     `<div class="list-item"><span class="${personClass(p.id)}">●</span> ${p.name}
-      <span class="tag" style="margin-left:auto">${p.role==='cook'?'Cook · logs only':'Pays'}</span></div>`).join('');
+      <span class="tag" style="margin-left:auto">${p.role==='cook'?'Cook · logs only':'Pays'}</span>
+      <button class="link-btn" data-rename="${p.id}">Rename</button></div>`).join('');
 }
 
 function showView(v){
@@ -1207,6 +1286,29 @@ $('#itemEditor').onclick = (e)=>{
   });
 };
 
+$('#peopleList').onclick = (e)=>{
+  const b = e.target.closest('[data-rename]'); if(!b) return;
+  const p = Store.data.people.find(x=>x.id===b.dataset.rename); if(!p) return;
+  const name = prompt('New name for '+p.name+':', p.name);
+  if (!name || !name.trim() || name.trim()===p.name) return;
+  runOp(async ()=>{
+    const arr = Store.data.people.map(x=>x.id===p.id ? {...x, name:name.trim()} : x);
+    await opSetPeople(arr); renderAll();
+  });
+};
+$('#newPersonRole').onclick = (e)=>{
+  const b = e.target.closest('[data-role]'); if(!b) return;
+  $$('#newPersonRole .pill').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+};
+$('#addPerson').onclick = ()=> runOp(async ()=>{
+  const name = $('#newPersonName').value.trim();
+  if (!name){ alert('Enter a name.'); return; }
+  if (Store.data.people.some(p=>p.name.toLowerCase()===name.toLowerCase())){ alert('Someone with that name already exists.'); return; }
+  const roleBtn = $('#newPersonRole .pill.active');
+  await opSetPeople([...Store.data.people, { id:Store.id(), name, role: roleBtn ? roleBtn.dataset.role : 'payer' }]);
+  $('#newPersonName').value=''; renderAll();
+});
+
 $('#enableNotif').onclick = async ()=>{
   if (!('Notification' in window)){ alert('Notifications not supported on this browser.'); return; }
   const p = await Notification.requestPermission();
@@ -1229,10 +1331,8 @@ function applyTheme(t){
   try{ localStorage.setItem('ghk_theme', t); }catch(e){}
   const m = document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', t==='dark' ? '#0f141b' : '#f7f5ef');
   const icon = t==='dark' ? sunSVG : moonSVG;
-  const btn = $('#themeToggle'); if(btn) btn.innerHTML = icon;
   const btnHeader = $('#themeToggleHeader'); if(btnHeader) btnHeader.innerHTML = icon;
 }
-$('#themeToggle').onclick = ()=> applyTheme(currentTheme()==='dark' ? 'light' : 'dark');
 $('#themeToggleHeader').onclick = ()=> applyTheme(currentTheme()==='dark' ? 'light' : 'dark');
 applyTheme(currentTheme());
 
@@ -1254,6 +1354,9 @@ $('#loginPeople').onclick = (e)=>{
   renderAll(); resetShopForm(); goHome();
 };
 function goHome(){ showView('home'); }
+
+window.addEventListener('online', ()=>flushPendingOps());
+setInterval(()=>{ if (pendingOps.length) flushPendingOps(); }, 30000);
 
 (async function boot(){
   await loadData();

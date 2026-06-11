@@ -36,8 +36,12 @@ create table if not exists salaries (
 create table if not exists app_config (
   id                     int primary key default 1,
   low_balance_threshold  numeric not null default 1000,
-  common_items           jsonb not null default '[]'
+  common_items           jsonb not null default '[]',
+  people                 jsonb              -- [{id, name, role}, ...]; null = app defaults
 );
+
+-- upgrade older installs that predate the people column
+alter table app_config add column if not exists people jsonb;
 
 -- one shared config row, seeded with the default shopping list
 insert into app_config (id, low_balance_threshold, common_items)
