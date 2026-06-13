@@ -15,7 +15,7 @@
   @keyframes syncpulse{0%,100%{opacity:1}50%{opacity:.35}}`;
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
-  var APP_VERSION = 'v46';
+  var APP_VERSION = 'v50';
   var updateReady = false, refreshing = false;
 
   function ensureBar(){
@@ -72,7 +72,7 @@
     diag.ticks++; diag.lastTick = Date.now();
     if (document.hidden){ diag.skip='hidden'; return; }
     if (hasUnsavedInput()){ diag.skip='typing'; return; }
-    if (g(function(){return busy;})){ diag.skip='saving'; return; }
+    if (window.appBusy){ diag.skip='saving'; return; }
     if (window.cloudSyncState && (window.cloudSyncState.status==='loading'||window.cloudSyncState.status==='syncing')){
       diag.skip='syncing'; return;
     }
@@ -91,7 +91,11 @@
   // Backstop: also pull on interaction/focus/resume (throttled), in case the
   // timer is throttled while the app is a backgrounded mobile PWA.
   var lastKick = 0;
-  function kick(){ var n=Date.now(); if (n-lastKick<2500) return; lastKick=n; cloudRefresh(); }
+  function kick(e){
+    if (e && e.target && e.target.closest &&
+        e.target.closest('#saveShop,#saveTop,#saveSal,[data-del],[data-retry-cloud]')) return;
+    var n=Date.now(); if (n-lastKick<2500) return; lastKick=n; cloudRefresh();
+  }
   ['pointerdown','touchstart','click'].forEach(function(ev){ window.addEventListener(ev, kick, true); });
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) cloudRefresh(); });
   window.addEventListener('focus', cloudRefresh);

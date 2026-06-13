@@ -1,6 +1,6 @@
 // Service worker — offline caching for the PWA.
 // Bump CACHE version whenever you change app files so clients update.
-const CACHE = 'ghar-kharcha-v46';
+const CACHE = 'ghar-kharcha-v50';
 const ASSETS = [
   './',
   './index.html',
@@ -31,6 +31,13 @@ function injectSync(html) {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  // Never cache Supabase/CDN/API reads. Only the local app shell belongs in
+  // the offline cache; caching cloud GETs is what made device data go stale.
+  if (url.origin !== self.location.origin) {
+    e.respondWith(fetch(req));
+    return;
+  }
   if (req.mode === 'navigate') {
     e.respondWith(
       fetch(req).then((res) =>

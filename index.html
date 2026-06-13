@@ -783,7 +783,18 @@ const SUPABASE_ANON = 'sb_publishable_pYlpW2Ixjz722lj0acz0Dg_KQz7RVLd';
 
 const USE_CLOUD = /^https:\/\/.+\.supabase\.co/.test(SUPABASE_URL) && SUPABASE_ANON.length > 20;
 let sb = null;
-if (USE_CLOUD && window.supabase) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+async function noCacheCloudFetch(input, init={}){
+  const sourceHeaders = init.headers || (input instanceof Request ? input.headers : undefined);
+  const headers = new Headers(sourceHeaders);
+  headers.set('Cache-Control','no-cache');
+  headers.set('Pragma','no-cache');
+  return fetch(input,{...init,headers,cache:'no-store'});
+}
+if (USE_CLOUD && window.supabase){
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON,{
+    global:{ fetch:noCacheCloudFetch }
+  });
+}
 
 const DEFAULT_DATA = {
   people: [
@@ -813,6 +824,9 @@ const USER_KEY = 'ghk_user';
 let currentUser = localStorage.getItem(USER_KEY) || null;
 const cloudSyncState = { status:'loading', operation:'Loading cloud data', message:'', lastSuccess:0 };
 window.cloudSyncState = cloudSyncState;
+window.appBusy = false;
+let cloudMutationEpoch = 0;
+let cloudReadNonce = 1000000 + Math.floor(Math.random()*1000000);
 
 function clearLegacyLocalData(){
   try{
@@ -848,12 +862,14 @@ async function loadData(){
 
 async function cloudFetchAll(operation='Refreshing cloud data'){
   requireCloud();
+  const startedEpoch = cloudMutationEpoch;
+  const readLimit = ++cloudReadNonce;
   setCloudStatus('syncing',operation);
   const [adv, exp, sal, cfg] = await withTimeout(Promise.all([
-    sb.from('advances').select('*'),
-    sb.from('expenses').select('*'),
-    sb.from('salaries').select('*'),
-    sb.from('app_config').select('*').eq('id',1).maybeSingle()
+    sb.from('advances').select('*').limit(readLimit),
+    sb.from('expenses').select('*').limit(readLimit),
+    sb.from('salaries').select('*').limit(readLimit),
+    sb.from('app_config').select('*').eq('id',1).limit(readLimit).maybeSingle()
   ]));
   if (adv.error||exp.error||sal.error||cfg.error) throw (adv.error||exp.error||sal.error||cfg.error);
   const next = structuredClone(DEFAULT_DATA);
@@ -865,6 +881,9 @@ async function cloudFetchAll(operation='Refreshing cloud data'){
     next.commonItems = (cfg.data.common_items&&cfg.data.common_items.length)?cfg.data.common_items:DEFAULT_DATA.commonItems;
     if (cfg.data.people && cfg.data.people.length) next.people = cfg.data.people;
   }
+  // A mutation began while this request was in flight. Its pre-mutation result
+  // must never overwrite the row Supabase just confirmed.
+  if (startedEpoch !== cloudMutationEpoch) return Store.data;
   Store.data = next;
   setCloudStatus('ok','Cloud data is current');
   return next;
@@ -874,8 +893,10 @@ let rtBound = false;
 function subscribeRealtime(){
   if (rtBound) return; rtBound = true;
   sb.channel('ghk-sync')
-    .on('postgres_changes', { event:'*', schema:'public' }, async ()=>{
-      await manualCloudSync('Applying a change from another device');
+    .on('postgres_changes', { event:'*', schema:'public' }, payload=>{
+      applyRealtimeChange(payload);
+      setCloudStatus('ok','Applied cloud change');
+      renderAll();
     })
     .subscribe(status=>{
       if (status==='CHANNEL_ERROR' || status==='TIMED_OUT'){
@@ -886,10 +907,10 @@ function subscribeRealtime(){
 
 let busy = false;
 async function runOp(fn){
-  if (busy) return; busy = true; setButtonsDisabled(true);
+  if (busy) return; busy = true; window.appBusy = true; setButtonsDisabled(true);
   try{ await fn(); }
   catch(e){ console.error('Cloud operation failed',e); }
-  finally{ busy = false; setButtonsDisabled(false); }
+  finally{ busy = false; window.appBusy = false; setButtonsDisabled(false); }
 }
 function setButtonsDisabled(v){ ['#saveShop','#saveTop','#saveSal'].forEach(s=>{const b=$(s); if(b)b.disabled=v;}); }
 
@@ -902,17 +923,17 @@ async function performCloudOp(op){
   if (op.type==='advance'){ const o=op.payload;
     res = await withTimeout(sb.from('advances').upsert({
       id:op.id, date:o.date, amount:o.amount, paid_by:o.paidBy, note:o.note||''
-    }, { onConflict:'id' }).select('id').single());
+    }, { onConflict:'id' }).select('*').single());
   } else if (op.type==='expense'){ const o=op.payload;
     res = await withTimeout(sb.from('expenses').upsert({
       id:op.id, date:o.date, items:o.items, total:o.total, logged_by:o.loggedBy, note:o.note||''
-    }, { onConflict:'id' }).select('id').single());
+    }, { onConflict:'id' }).select('*').single());
   } else if (op.type==='salary'){ const o=op.payload;
     res = await withTimeout(sb.from('salaries').upsert(
       { month:o.month, amount:o.amount, paid_by:o.paidBy }, { onConflict:'month' }
-    ).select('id').single());
+    ).select('*').single());
   } else if (op.type==='config'){
-    res = await withTimeout(sb.from('app_config').update({ [op.key]:op.value }).eq('id',1).select('id').single());
+    res = await withTimeout(sb.from('app_config').update({ [op.key]:op.value }).eq('id',1).select('*').single());
   } else if (op.type==='delete'){
     const deleted = await withTimeout(sb.from(op.table).delete().eq('id', op.id).select('id'));
     if (deleted.error) throw deleted.error;
@@ -921,20 +942,64 @@ async function performCloudOp(op){
       if (check.error) throw check.error;
       if (check.data) throw new Error('Cloud refused to delete this entry');
     }
-    return;
+    return deleted.data;
   }
   if (res && res.error) throw res.error;
   if (res && !res.data) throw new Error('Cloud did not confirm the change');
+  return res.data;
+}
+function applyCloudConfirmation(op, data){
+  if (op.type==='advance'){
+    const row = {id:data.id,date:data.date,amount:Number(data.amount),paidBy:data.paid_by,note:data.note||''};
+    Store.data.topups = Store.data.topups.filter(r=>r.id!==row.id).concat(row);
+  } else if (op.type==='expense'){
+    const row = {id:data.id,date:data.date,items:data.items||[],total:Number(data.total),loggedBy:data.logged_by,note:data.note||''};
+    Store.data.expenses = Store.data.expenses.filter(r=>r.id!==row.id).concat(row);
+  } else if (op.type==='salary'){
+    const row = {id:data.id,month:data.month,amount:Number(data.amount),paidBy:data.paid_by};
+    Store.data.salaries = Store.data.salaries.filter(r=>r.month!==row.month).concat(row);
+  } else if (op.type==='config'){
+    if (data.low_balance_threshold!=null) Store.data.settings.lowBalanceThreshold=Number(data.low_balance_threshold);
+    if (data.common_items) Store.data.commonItems=data.common_items;
+    if (data.people) Store.data.people=data.people;
+  } else if (op.type==='delete'){
+    const ids = new Set((data||[]).map(r=>r.id).concat(op.id));
+    if (op.table==='advances') Store.data.topups=Store.data.topups.filter(r=>!ids.has(r.id));
+    if (op.table==='expenses') Store.data.expenses=Store.data.expenses.filter(r=>!ids.has(r.id));
+  }
+}
+function applyRealtimeChange(payload){
+  const row = payload.new && Object.keys(payload.new).length ? payload.new : payload.old;
+  if (!row) return;
+  if (payload.eventType==='DELETE'){
+    applyCloudConfirmation({type:'delete',table:payload.table,id:row.id},[row]);
+  } else if (payload.table==='advances'){
+    applyCloudConfirmation({type:'advance'},row);
+  } else if (payload.table==='expenses'){
+    applyCloudConfirmation({type:'expense'},row);
+  } else if (payload.table==='salaries'){
+    applyCloudConfirmation({type:'salary'},row);
+  } else if (payload.table==='app_config'){
+    applyCloudConfirmation({type:'config'},row);
+  }
 }
 async function cloudMutate(operation, op){
+  cloudMutationEpoch++;
   setCloudStatus('syncing',operation);
-  try{ await performCloudOp(op); }
+  let confirmed;
+  try{
+    confirmed = await performCloudOp(op);
+    applyCloudConfirmation(op,confirmed);
+    setCloudStatus('ok',operation+' saved');
+    renderAll();
+  }
   catch(e){
     setCloudStatus('error',operation+' was not saved',e);
     renderAll();
     throw e;
   }
   try{
+    await new Promise(resolve=>setTimeout(resolve,150));
     await cloudFetchAll('Confirming '+operation.toLowerCase());
     renderAll();
   }catch(e){
