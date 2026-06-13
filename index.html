@@ -844,10 +844,16 @@ async function cloudFetchAll(){
 // zero" bug: a cloud read that comes back empty/stale (RLS, replication lag,
 // a paused project) must never erase an entry already saved on the phone.
 function reconcile(cloudTopups, cloudExpenses, cloudSalaries){
-  // Hide rows whose deletion hasn't synced yet, so a cloud read can't bring them back.
-  const pendingDel = new Set(pendingOps.filter(o=>o.type==='delete').map(o=>o.id));
-  cloudTopups   = cloudTopups.filter(t=>!pendingDel.has(t.id));
-  cloudExpenses = cloudExpenses.filter(e=>!pendingDel.has(e.id));
+  // Hide rows the user deleted (tombstones) so a cloud read can't bring them back.
+  const tomb = new Set(deletedIds);
+  // Drop tombstones the cloud no longer returns — that deletion is confirmed done.
+  if (deletedIds.length){
+    const stillInCloud = new Set([...cloudTopups, ...cloudExpenses].map(r=>r.id));
+    const kept = deletedIds.filter(id=>stillInCloud.has(id));
+    if (kept.length !== deletedIds.length){ deletedIds = kept; saveDeletedIds(); }
+  }
+  cloudTopups   = cloudTopups.filter(t=>!tomb.has(t.id));
+  cloudExpenses = cloudExpenses.filter(e=>!tomb.has(e.id));
   const tKey = t=>[t.date,t.amount,t.paidBy].join('|');
   const eKey = e=>[e.date,e.total,e.loggedBy].join('|');
   const seenT = new Set(cloudTopups.map(tKey));
@@ -891,6 +897,16 @@ const PENDING_KEY = 'ghk_pending_v1';
 let pendingOps = [];
 try{ pendingOps = JSON.parse(localStorage.getItem(PENDING_KEY)) || []; }catch(e){}
 function savePendingOps(){ try{ localStorage.setItem(PENDING_KEY, JSON.stringify(pendingOps)); }catch(e){} }
+
+// Tombstones: ids the user deleted. Kept until a cloud fetch confirms the row is
+// actually gone. This is what makes delete stick even if the cloud accepts the
+// delete but doesn't apply it (e.g. an RLS policy with no DELETE rule) — without
+// it the next refetch would pull the row straight back.
+const DELETED_KEY = 'ghk_deleted_v1';
+let deletedIds = [];
+try{ deletedIds = JSON.parse(localStorage.getItem(DELETED_KEY)) || []; }catch(e){}
+function saveDeletedIds(){ try{ localStorage.setItem(DELETED_KEY, JSON.stringify(deletedIds)); }catch(e){} }
+function markDeleted(id){ if(!deletedIds.includes(id)){ deletedIds.push(id); saveDeletedIds(); } }
 function queueOp(op){
   if (op.type==='config') pendingOps = pendingOps.filter(p=>!(p.type==='config' && p.key===op.key));
   pendingOps.push(op); savePendingOps();
@@ -974,6 +990,7 @@ async function cloudDelete(table, id){
   if (!USE_CLOUD) return;
   const pendingInsert = pendingOps.findIndex(o=>o.localId===id);
   if (pendingInsert !== -1){ pendingOps.splice(pendingInsert,1); savePendingOps(); renderSyncGlow(); return; }
+  markDeleted(id);
   const op = { type:'delete', table, id };
   if (!sb){ queueOp(op); online=false; renderSyncGlow(); return; }
   if (pendingOps.length){ queueOp(op); await flushPendingOps(); if(pendingOps.length) syncNotice(); return; }
