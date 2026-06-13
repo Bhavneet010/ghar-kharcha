@@ -59,12 +59,49 @@
     if (!g(function(){return USE_CLOUD;}) || !g(function(){return sb;})){ location.reload(); return; }
     var bar = ensureBar();
     bar.className = 'syncbar ok'; bar.innerHTML = '<span class="dot"></span><span>Syncing…</span>';
+    await robustFlush(true);
+  }
+
+  // Describe a queued op for an on-screen error report (no console needed).
+  function opDesc(op){
     try{
-      if (typeof flushPendingOps === 'function') await flushPendingOps();
-      if (typeof cloudFetchAll === 'function') await cloudFetchAll();
-      if (typeof renderAll === 'function') renderAll();
-      flashSynced();
-    }catch(e){ try{ online = false; }catch(_){ } render(); }
+      var o = op.payload || {};
+      if (op.type==='advance') return 'Advance ₹'+o.amount+' on '+o.date+' (by '+o.paidBy+')';
+      if (op.type==='expense') return 'Expense ₹'+o.total+' on '+o.date+' (by '+o.loggedBy+')';
+      if (op.type==='salary')  return 'Salary '+o.month+' ₹'+o.amount+' (by '+o.paidBy+')';
+      if (op.type==='config')  return 'Setting: '+op.key;
+      if (op.type==='delete')  return 'Delete from '+op.table;
+    }catch(e){}
+    return op.type || 'entry';
+  }
+  function errMsg(e){ return (e && (e.message||e.details||e.hint||e.code)) || 'unknown error'; }
+
+  // Self-healing flush: upload every queued entry independently so one bad
+  // entry can't block the rest (the original flush stopped at the first
+  // failure). Failed entries stay queued and are reported on screen.
+  var flushingNow = false;
+  async function robustFlush(showReport){
+    if (flushingNow) return; flushingNow = true;
+    try{
+      var P = g(function(){return pendingOps;});
+      if (!P || !P.length){
+        try{ if (typeof cloudFetchAll==='function'){ await cloudFetchAll(); if(typeof renderAll==='function') renderAll(); } }catch(e){}
+        flashSynced(); return;
+      }
+      var ops = P.slice(), remaining = [], report = [];
+      for (var i=0;i<ops.length;i++){
+        try{ await performCloudOp(ops[i]); }
+        catch(e){ remaining.push(ops[i]); report.push('• '+opDesc(ops[i])+' → '+errMsg(e)); }
+      }
+      P.length = 0; for (var j=0;j<remaining.length;j++) P.push(remaining[j]);
+      try{ savePendingOps(); }catch(e){}
+      try{ if (typeof cloudFetchAll==='function'){ await cloudFetchAll(); if(typeof renderAll==='function') renderAll(); } }catch(e){}
+      if (!remaining.length){ try{ online = true; }catch(_){ } flashSynced(); }
+      else {
+        try{ online = false; }catch(_){ } render();
+        if (showReport) alert(remaining.length+' entr'+(remaining.length>1?'ies':'y')+" couldn't sync (everything else did):\n\n"+report.join('\n')+"\n\nPlease screenshot this and send it to me.");
+      }
+    } finally { flushingNow = false; }
   }
   function hasUnsavedInput(){
     var a = document.activeElement;
@@ -107,5 +144,6 @@
     });
   }
 
+  try{ flushPendingOps = robustFlush; }catch(e){}
   ensureBar(); render();
 })();
