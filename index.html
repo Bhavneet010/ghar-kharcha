@@ -62,6 +62,12 @@
   .banner.warn{background:var(--warn-bg);color:var(--warn)}
   .banner.danger{background:var(--danger-bg);color:var(--danger)}
   .banner.info{background:var(--info-bg);color:var(--accent)}
+  .cloud-error{display:none;background:var(--danger-bg);color:var(--danger);border:1px solid currentColor;
+    border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.45}
+  .cloud-error.show{display:block}
+  .cloud-error strong{display:block;font-size:14px;margin-bottom:3px}
+  .cloud-error button{margin-top:9px;border:1px solid currentColor;background:transparent;color:inherit;
+    border-radius:6px;padding:7px 10px;font:inherit;font-weight:700;cursor:pointer}
   label{display:block;font-size:13px;color:var(--muted);margin:16px 0 7px}
   input,select{width:100%;padding:14px;background:var(--inset);border:1px solid transparent;
     color:var(--text);border-radius:13px;font-size:16px;font-family:inherit}
@@ -531,6 +537,7 @@
       <h2 style="margin:6px 0 2px">Ghar Kharcha</h2>
       <p class="muted small">Shared kitchen expenses · pick who you are</p>
     </div>
+    <div id="loginSyncErrorSlot" class="cloud-error" role="alert" aria-live="assertive"></div>
     <div id="loginPeople"></div>
     <p class="muted small center" style="margin-top:18px">Your choice is remembered on this phone. You can switch anytime.</p>
   </main>
@@ -621,6 +628,7 @@
         </div>
       </div>
 
+      <div id="syncErrorSlot" class="cloud-error" role="alert" aria-live="assertive"></div>
       <div id="alertSlot"></div>
 
       <!-- Add Expenses heading row -->
@@ -774,10 +782,9 @@ const SUPABASE_URL  = 'https://xebnciawqwscifzgrkbu.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_pYlpW2Ixjz722lj0acz0Dg_KQz7RVLd';
 
 const USE_CLOUD = /^https:\/\/.+\.supabase\.co/.test(SUPABASE_URL) && SUPABASE_ANON.length > 20;
-let sb = null, online = true;
+let sb = null;
 if (USE_CLOUD && window.supabase) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-const KEY = 'ghk_data_v1';
 const DEFAULT_DATA = {
   people: [
     { id: 'b', name: 'Bhavneet', role: 'payer' },
@@ -792,18 +799,10 @@ const DEFAULT_DATA = {
 };
 const Store = {
   data: structuredClone(DEFAULT_DATA),
-  cache(){ localStorage.setItem(KEY, JSON.stringify(this.data)); },
-  loadCache(){
-    try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d){ this.data = d;
-      for(const k in DEFAULT_DATA) if(!(k in this.data)) this.data[k]=structuredClone(DEFAULT_DATA[k]); } }
-    catch(e){}
-  },
   id(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 };
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-function isUuid(id){ return UUID_RE.test(String(id||'')); }
 function syncId(){
-  if (crypto && typeof crypto.randomUUID==='function') return crypto.randomUUID();
+  if (globalThis.crypto && typeof crypto.randomUUID==='function') return crypto.randomUUID();
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
     const r=crypto.getRandomValues(new Uint8Array(1))[0]&15;
     return (c==='x'?r:(r&3)|8).toString(16);
@@ -812,17 +811,44 @@ function syncId(){
 
 const USER_KEY = 'ghk_user';
 let currentUser = localStorage.getItem(USER_KEY) || null;
+const cloudSyncState = { status:'loading', operation:'Loading cloud data', message:'', lastSuccess:0 };
+window.cloudSyncState = cloudSyncState;
 
-async function loadData(){
-  Store.loadCache();
-  normalizePendingInsertIds();
-  if (USE_CLOUD && sb){
-    try { await flushPendingOps(); await cloudFetchAll(); subscribeRealtime(); }
-    catch(e){ console.warn('Cloud load failed, using local cache', e); online = false; }
-  }
+function clearLegacyLocalData(){
+  try{
+    ['ghk_data_v1','ghk_pending_v1','ghk_deleted_v1'].forEach(k=>localStorage.removeItem(k));
+  }catch(e){}
+}
+function cloudErrorMessage(err){
+  if (!err) return 'Unknown cloud error';
+  return [err.message, err.details, err.hint, err.code].filter(Boolean).join(' | ') || String(err);
+}
+function setCloudStatus(status, operation='', err=null){
+  if (status==='syncing' && cloudSyncState.status==='error') return;
+  cloudSyncState.status = status;
+  cloudSyncState.operation = operation;
+  cloudSyncState.message = err ? cloudErrorMessage(err) : '';
+  if (status==='ok') cloudSyncState.lastSuccess = Date.now();
+  if (typeof renderCloudError==='function') renderCloudError();
+  if (typeof renderSyncGlow==='function') renderSyncGlow();
+}
+function requireCloud(){
+  if (!USE_CLOUD) throw new Error('Supabase is not configured');
+  if (!window.supabase) throw new Error('Supabase library did not load');
+  if (!sb) throw new Error('Cloud client could not be created');
 }
 
-async function cloudFetchAll(){
+async function loadData(){
+  clearLegacyLocalData();
+  Store.data = structuredClone(DEFAULT_DATA);
+  try { await cloudFetchAll('Loading cloud data'); }
+  catch(e){ setCloudStatus('error','Could not load cloud data',e); }
+  if (sb) subscribeRealtime();
+}
+
+async function cloudFetchAll(operation='Refreshing cloud data'){
+  requireCloud();
+  setCloudStatus('syncing',operation);
   const [adv, exp, sal, cfg] = await withTimeout(Promise.all([
     sb.from('advances').select('*'),
     sb.from('expenses').select('*'),
@@ -830,54 +856,18 @@ async function cloudFetchAll(){
     sb.from('app_config').select('*').eq('id',1).maybeSingle()
   ]));
   if (adv.error||exp.error||sal.error||cfg.error) throw (adv.error||exp.error||sal.error||cfg.error);
-  const cloudTopups   = (adv.data||[]).map(r=>({id:r.id,date:r.date,amount:Number(r.amount),paidBy:r.paid_by,note:r.note||''}));
-  const cloudExpenses = (exp.data||[]).map(r=>({id:r.id,date:r.date,items:r.items||[],total:Number(r.total),loggedBy:r.logged_by,note:r.note||''}));
-  const cloudSalaries = (sal.data||[]).map(r=>({id:r.id,month:r.month,amount:Number(r.amount),paidBy:r.paid_by}));
-  reconcile(cloudTopups, cloudExpenses, cloudSalaries);
+  const next = structuredClone(DEFAULT_DATA);
+  next.topups = (adv.data||[]).map(r=>({id:r.id,date:r.date,amount:Number(r.amount),paidBy:r.paid_by,note:r.note||''}));
+  next.expenses = (exp.data||[]).map(r=>({id:r.id,date:r.date,items:r.items||[],total:Number(r.total),loggedBy:r.logged_by,note:r.note||''}));
+  next.salaries = (sal.data||[]).map(r=>({id:r.id,month:r.month,amount:Number(r.amount),paidBy:r.paid_by}));
   if (cfg.data){
-    if (cfg.data.low_balance_threshold!=null) Store.data.settings.lowBalanceThreshold = Number(cfg.data.low_balance_threshold);
-    Store.data.commonItems = (cfg.data.common_items&&cfg.data.common_items.length)?cfg.data.common_items:DEFAULT_DATA.commonItems;
-    if (cfg.data.people && cfg.data.people.length) Store.data.people = cfg.data.people;
+    if (cfg.data.low_balance_threshold!=null) next.settings.lowBalanceThreshold = Number(cfg.data.low_balance_threshold);
+    next.commonItems = (cfg.data.common_items&&cfg.data.common_items.length)?cfg.data.common_items:DEFAULT_DATA.commonItems;
+    if (cfg.data.people && cfg.data.people.length) next.people = cfg.data.people;
   }
-  // Unsynced local config edits (still queued) must win over whatever the cloud returned.
-  pendingOps.filter(o=>o.type==='config').forEach(o=>{
-    if (o.key==='low_balance_threshold') Store.data.settings.lowBalanceThreshold = o.value;
-    else if (o.key==='common_items') Store.data.commonItems = o.value;
-    else if (o.key==='people') Store.data.people = o.value;
-  });
-  Store.cache();
-  online = true;
-}
-
-// Cloud rows are authoritative. Keep only rows that are genuinely waiting to
-// upload from this device. This lets a delete on one device disappear everywhere
-// else instead of being restored from another device's stale local cache.
-function reconcile(cloudTopups, cloudExpenses, cloudSalaries){
-  // Hide rows the user deleted (tombstones) so a cloud read can't bring them back.
-  const tomb = new Set(deletedIds);
-  // Drop tombstones the cloud no longer returns — that deletion is confirmed done.
-  if (deletedIds.length){
-    const stillInCloud = new Set([...cloudTopups, ...cloudExpenses].map(r=>r.id));
-    const kept = deletedIds.filter(id=>stillInCloud.has(id));
-    if (kept.length !== deletedIds.length){ deletedIds = kept; saveDeletedIds(); }
-  }
-  cloudTopups   = cloudTopups.filter(t=>!tomb.has(t.id));
-  cloudExpenses = cloudExpenses.filter(e=>!tomb.has(e.id));
-  const mergeRows = (cloudRows, localRows, opType)=>{
-    const cloudIds = new Set(cloudRows.map(r=>r.id));
-    const pendingIds = new Set(pendingOps.filter(o=>o.type===opType).map(o=>o.id||o.localId));
-    const unsynced = localRows.filter(r=>!cloudIds.has(r.id) && pendingIds.has(r.id));
-    return cloudRows.concat(unsynced);
-  };
-  Store.data.topups = mergeRows(cloudTopups, Store.data.topups, 'advance');
-  Store.data.expenses = mergeRows(cloudExpenses, Store.data.expenses, 'expense');
-  // Salaries are unique per month. Cloud wins unless this device has a queued edit.
-  const byMonth = {};
-  cloudSalaries.forEach(s=>byMonth[s.month]=s);
-  pendingOps.filter(o=>o.type==='salary').forEach(o=>{
-    byMonth[o.payload.month] = { month:o.payload.month, amount:o.payload.amount, paidBy:o.payload.paidBy };
-  });
-  Store.data.salaries = Object.values(byMonth);
+  Store.data = next;
+  setCloudStatus('ok','Cloud data is current');
+  return next;
 }
 
 let rtBound = false;
@@ -885,75 +875,44 @@ function subscribeRealtime(){
   if (rtBound) return; rtBound = true;
   sb.channel('ghk-sync')
     .on('postgres_changes', { event:'*', schema:'public' }, async ()=>{
-      try{ await cloudFetchAll(); renderAll(); }catch(e){}
+      await manualCloudSync('Applying a change from another device');
     })
-    .subscribe();
+    .subscribe(status=>{
+      if (status==='CHANNEL_ERROR' || status==='TIMED_OUT'){
+        setCloudStatus('error','Live cloud connection failed',new Error(status));
+      }
+    });
 }
 
 let busy = false;
 async function runOp(fn){
   if (busy) return; busy = true; setButtonsDisabled(true);
   try{ await fn(); }
-  catch(e){ if(USE_CLOUD){ online = false; renderSyncGlow(); } alert('Could not save — check your connection.\n\n'+(e.message||e)); }
+  catch(e){ console.error('Cloud operation failed',e); }
   finally{ busy = false; setButtonsDisabled(false); }
 }
 function setButtonsDisabled(v){ ['#saveShop','#saveTop','#saveSal'].forEach(s=>{const b=$(s); if(b)b.disabled=v;}); }
 
-// ---- Writes are local-first: saved on this phone immediately, then synced ----
-// to the cloud. If the cloud is unreachable the op waits in a queue and is
-// retried automatically, so an entry is never lost or silently dropped.
-const PENDING_KEY = 'ghk_pending_v1';
-let pendingOps = [];
-try{ pendingOps = JSON.parse(localStorage.getItem(PENDING_KEY)) || []; }catch(e){}
-function savePendingOps(){ try{ localStorage.setItem(PENDING_KEY, JSON.stringify(pendingOps)); }catch(e){} }
-function normalizePendingInsertIds(){
-  let changed = false;
-  for (const op of pendingOps){
-    if (op.type!=='advance' && op.type!=='expense') continue;
-    const oldId = op.id || op.localId;
-    if (isUuid(oldId)){ op.id=oldId; op.localId=oldId; continue; }
-    const newId = syncId();
-    const rows = op.type==='advance' ? Store.data.topups : Store.data.expenses;
-    const row = rows.find(r=>r.id===oldId);
-    if (row) row.id = newId;
-    op.id = newId;
-    op.localId = newId;
-    changed = true;
-  }
-  if (changed){ Store.cache(); savePendingOps(); }
-}
-
-// Tombstones: ids the user deleted. Kept until a cloud fetch confirms the row is
-// actually gone. This is what makes delete stick even if the cloud accepts the
-// delete but doesn't apply it (e.g. an RLS policy with no DELETE rule) — without
-// it the next refetch would pull the row straight back.
-const DELETED_KEY = 'ghk_deleted_v1';
-let deletedIds = [];
-try{ deletedIds = JSON.parse(localStorage.getItem(DELETED_KEY)) || []; }catch(e){}
-function saveDeletedIds(){ try{ localStorage.setItem(DELETED_KEY, JSON.stringify(deletedIds)); }catch(e){} }
-function markDeleted(id){ if(!deletedIds.includes(id)){ deletedIds.push(id); saveDeletedIds(); } }
-function queueOp(op){
-  if (op.type==='config') pendingOps = pendingOps.filter(p=>!(p.type==='config' && p.key===op.key));
-  if (op.type==='delete') pendingOps = pendingOps.filter(p=>!(p.type==='delete' && p.table===op.table && p.id===op.id));
-  pendingOps.push(op); savePendingOps();
-}
 function withTimeout(promise, ms=12000){
   return Promise.race([promise, new Promise((_,rej)=>setTimeout(()=>rej(new Error('Request timed out')), ms))]);
 }
 async function performCloudOp(op){
+  requireCloud();
   let res;
   if (op.type==='advance'){ const o=op.payload;
     res = await withTimeout(sb.from('advances').upsert({
-      id:op.id||op.localId, date:o.date, amount:o.amount, paid_by:o.paidBy, note:o.note||''
-    }, { onConflict:'id' }));
+      id:op.id, date:o.date, amount:o.amount, paid_by:o.paidBy, note:o.note||''
+    }, { onConflict:'id' }).select('id').single());
   } else if (op.type==='expense'){ const o=op.payload;
     res = await withTimeout(sb.from('expenses').upsert({
-      id:op.id||op.localId, date:o.date, items:o.items, total:o.total, logged_by:o.loggedBy, note:o.note||''
-    }, { onConflict:'id' }));
+      id:op.id, date:o.date, items:o.items, total:o.total, logged_by:o.loggedBy, note:o.note||''
+    }, { onConflict:'id' }).select('id').single());
   } else if (op.type==='salary'){ const o=op.payload;
-    res = await withTimeout(sb.from('salaries').upsert({ month:o.month, amount:o.amount, paid_by:o.paidBy }, { onConflict:'month' }));
+    res = await withTimeout(sb.from('salaries').upsert(
+      { month:o.month, amount:o.amount, paid_by:o.paidBy }, { onConflict:'month' }
+    ).select('id').single());
   } else if (op.type==='config'){
-    res = await withTimeout(sb.from('app_config').update({ [op.key]:op.value }).eq('id',1));
+    res = await withTimeout(sb.from('app_config').update({ [op.key]:op.value }).eq('id',1).select('id').single());
   } else if (op.type==='delete'){
     const deleted = await withTimeout(sb.from(op.table).delete().eq('id', op.id).select('id'));
     if (deleted.error) throw deleted.error;
@@ -965,89 +924,67 @@ async function performCloudOp(op){
     return;
   }
   if (res && res.error) throw res.error;
+  if (res && !res.data) throw new Error('Cloud did not confirm the change');
 }
-let flushing = false;
-async function flushPendingOps(){
-  if (!(USE_CLOUD && sb) || flushing || !pendingOps.length) return;
-  flushing = true;
-  try{
-    while (pendingOps.length){
-      await performCloudOp(pendingOps[0]);
-      pendingOps.shift(); savePendingOps();
-    }
-    try{ await cloudFetchAll(); }catch(e){}
+async function cloudMutate(operation, op){
+  setCloudStatus('syncing',operation);
+  try{ await performCloudOp(op); }
+  catch(e){
+    setCloudStatus('error',operation+' was not saved',e);
     renderAll();
-  }catch(e){ console.warn('Sync still failing, will retry', e); online = false; renderSyncGlow(); }
-  finally{ flushing = false; }
+    throw e;
+  }
+  try{
+    await cloudFetchAll('Confirming '+operation.toLowerCase());
+    renderAll();
+  }catch(e){
+    setCloudStatus('error',operation+' was saved, but the latest cloud data could not be loaded',e);
+    renderAll();
+  }
 }
-let syncNoticeShown = false;
-function syncNotice(err){
-  if (syncNoticeShown) return; syncNoticeShown = true;
-  alert('Saved on this phone.\n\nCloud sync failed though ('+((err&&(err.message||err))||'no connection')+'), so it may not show on other phones yet. The app will keep retrying automatically.');
-}
-async function cloudWrite(op){
-  if (!USE_CLOUD) return;
-  queueOp(op);
-  if (!sb){ online = false; renderSyncGlow(); return; }
-  await flushPendingOps();
-  if (pendingOps.length) syncNotice();
+async function manualCloudSync(operation='Refreshing cloud data'){
+  try{
+    await cloudFetchAll(operation);
+    renderAll();
+    return true;
+  }catch(e){
+    setCloudStatus('error',operation+' failed',e);
+    renderAll();
+    return false;
+  }
 }
 
 async function opAddExpense(o){
-  const row = { id:syncId(), ...o };
-  Store.data.expenses.push(row); Store.cache();
-  await cloudWrite({ type:'expense', payload:o, id:row.id, localId:row.id });
+  await cloudMutate('Saving expense',{ type:'expense', payload:o, id:syncId() });
 }
 async function opAddAdvance(o){
-  const row = { id:syncId(), ...o };
-  Store.data.topups.push(row); Store.cache();
-  await cloudWrite({ type:'advance', payload:o, id:row.id, localId:row.id });
+  await cloudMutate('Saving advance',{ type:'advance', payload:o, id:syncId() });
 }
 async function opDeleteAdvance(id){
-  Store.data.topups = Store.data.topups.filter(t=>t.id!==id); Store.cache();
-  await cloudDelete('advances', id);
+  await cloudMutate('Deleting advance',{ type:'delete', table:'advances', id });
 }
 async function opDeleteExpense(id){
-  Store.data.expenses = Store.data.expenses.filter(e=>e.id!==id); Store.cache();
-  await cloudDelete('expenses', id);
-}
-// Deleting is local-first too. If the entry was still waiting to sync we just
-// drop its queued insert (it never reached the cloud); otherwise we queue a
-// cloud delete and let reconcile() keep it hidden until that delete lands.
-async function cloudDelete(table, id){
-  if (!USE_CLOUD) return;
-  const pendingInsert = pendingOps.findIndex(o=>o.localId===id);
-  if (pendingInsert !== -1){ pendingOps.splice(pendingInsert,1); savePendingOps(); renderSyncGlow(); return; }
-  markDeleted(id);
-  const op = { type:'delete', table, id };
-  queueOp(op);
-  if (!sb){ online=false; renderSyncGlow(); return; }
-  await flushPendingOps();
-  if (pendingOps.length) syncNotice();
+  await cloudMutate('Deleting expense',{ type:'delete', table:'expenses', id });
 }
 async function opUpsertSalary(o){
-  const ex = Store.data.salaries.find(s=>s.month===o.month);
-  if (ex){ ex.amount=o.amount; ex.paidBy=o.paidBy; }
-  else Store.data.salaries.push({ id:Store.id(), ...o });
-  Store.cache();
-  await cloudWrite({ type:'salary', payload:o });
+  await cloudMutate('Saving salary',{ type:'salary', payload:o });
 }
 async function opSetThreshold(n){
-  Store.data.settings.lowBalanceThreshold = n; Store.cache();
-  await cloudWrite({ type:'config', key:'low_balance_threshold', value:n });
+  await cloudMutate('Saving low-balance alert',{ type:'config', key:'low_balance_threshold', value:n });
 }
 async function opSetCommonItems(arr){
-  Store.data.commonItems = arr; Store.cache();
-  await cloudWrite({ type:'config', key:'common_items', value:arr });
+  await cloudMutate('Saving common items',{ type:'config', key:'common_items', value:arr });
 }
 async function opSetPeople(arr){
-  Store.data.people = arr; Store.cache();
-  await cloudWrite({ type:'config', key:'people', value:arr });
+  await cloudMutate('Saving people',{ type:'config', key:'people', value:arr });
 }
 
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => [...r.querySelectorAll(s)];
 const fmt = (n) => '₹' + (Math.round(n)).toLocaleString('en-IN');
+const escapeHtml = (s) => String(s||'').replace(/[&<>"']/g,c=>({
+  '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+}[c]));
 
 function itemEmoji(name){
   const n=(name||'').toLowerCase();
@@ -1109,13 +1046,24 @@ function renderAll(){
 function renderSyncGlow(){
   const av = $('#switchUser');
   av.classList.remove('sync-ok','sync-bad');
-  let status = 'local only';
-  if (USE_CLOUD){
-    const ok = online && !pendingOps.length;
-    av.classList.add(ok ? 'sync-ok' : 'sync-bad');
-    status = ok ? 'synced' : pendingOps.length ? pendingOps.length+' waiting to sync' : 'offline';
-  }
-  av.title = (personById(currentUser).name || '') + ' · ' + status;
+  const ok = cloudSyncState.status==='ok';
+  av.classList.add(ok ? 'sync-ok' : 'sync-bad');
+  av.title = (personById(currentUser).name || '') + ' · ' +
+    (ok ? 'cloud data current' : cloudSyncState.operation || 'cloud unavailable');
+}
+function renderCloudError(){
+  const slots = [$('#syncErrorSlot'),$('#loginSyncErrorSlot')].filter(Boolean);
+  slots.forEach(slot=>{
+    if (cloudSyncState.status!=='error'){
+      slot.className='cloud-error'; slot.innerHTML=''; return;
+    }
+    slot.className='cloud-error show';
+    slot.innerHTML = `<strong>Cloud sync failed</strong>
+      <div>${escapeHtml(cloudSyncState.operation)}</div>
+      <div class="small" style="margin-top:4px">${escapeHtml(cloudSyncState.message)}</div>
+      <div class="small" style="margin-top:5px">No financial change is saved locally. Fix the connection, then retry.</div>
+      <button type="button" data-retry-cloud>Retry cloud connection</button>`;
+  });
 }
 function renderHome(){
   const bal = balance();
@@ -1456,8 +1404,10 @@ $('#loginPeople').onclick = (e)=>{
 };
 function goHome(){ showView('home'); }
 
-window.addEventListener('online', ()=>flushPendingOps());
-setInterval(()=>{ if (pendingOps.length) flushPendingOps(); }, 30000);
+[$('#syncErrorSlot'),$('#loginSyncErrorSlot')].forEach(slot=>slot.addEventListener('click',async e=>{
+  if (e.target.closest('[data-retry-cloud]')) await manualCloudSync('Retrying cloud connection');
+}));
+window.addEventListener('online',()=>manualCloudSync('Internet restored; refreshing cloud data'));
 
 (async function boot(){
   await loadData();
