@@ -18,6 +18,7 @@
   @keyframes syncpulse{0%,100%{opacity:1}50%{opacity:.35}}`;
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
+  var APP_VERSION = 'v42';
   var updateReady = false, syncedFlash = null, prevBad = false, refreshing = false;
 
   function ensureBar(){
@@ -166,6 +167,44 @@
       setInterval(poll, 30*60*1000);
     });
   }
+
+  // Tiny always-visible version badge. Tap it to run a live read-test and see
+  // exactly what this device gets back from the cloud (for diagnosing sync).
+  function addBadge(){
+    if (document.getElementById('verBadge')) return;
+    var b = document.createElement('button');
+    b.id = 'verBadge'; b.textContent = APP_VERSION;
+    b.style.cssText = 'position:fixed;right:6px;bottom:6px;z-index:99999;'
+      + 'font:600 10px inherit;opacity:.5;background:transparent;border:none;'
+      + 'color:var(--text);padding:5px;cursor:pointer';
+    b.onclick = async function(){
+      var L = ['Ghar Kharcha '+APP_VERSION];
+      L.push('cloud='+(g(function(){return USE_CLOUD;})?'on':'off')
+            +'  sb='+(g(function(){return sb;})?'yes':'no')
+            +'  online='+g(function(){return online;})
+            +'  pending='+((g(function(){return pendingOps;})||[]).length));
+      var S = g(function(){return sb;});
+      if (!S){ alert(L.join('\n')+'\n\nNo cloud client.'); return; }
+      try{
+        var t0 = Date.now();
+        var r = await Promise.all([
+          S.from('advances').select('*'),
+          S.from('expenses').select('*'),
+          S.from('salaries').select('*')
+        ]);
+        var ms = Date.now()-t0;
+        L.push('read test ('+ms+'ms): advances='+(r[0].data?r[0].data.length:'?')
+              +' expenses='+(r[1].data?r[1].data.length:'?')
+              +' salaries='+(r[2].data?r[2].data.length:'?'));
+        var errs = r.map(function(x){return x.error;}).filter(Boolean);
+        if (errs.length) L.push('READ ERROR: '+errs.map(function(e){return (e.message||e.code||JSON.stringify(e));}).join(' | '));
+        if (typeof cloudFetchAll==='function'){ await cloudFetchAll(); if(typeof renderAll==='function') renderAll(); L.push('applied to screen: ok'); }
+      }catch(e){ L.push('EXCEPTION: '+(e&&(e.message||e.name||e))); }
+      alert(L.join('\n'));
+    };
+    document.body.appendChild(b);
+  }
+  addBadge();
 
   try{ flushPendingOps = robustFlush; }catch(e){}
   ensureBar(); render();
