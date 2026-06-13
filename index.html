@@ -800,12 +800,22 @@ const Store = {
   },
   id(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 };
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+function isUuid(id){ return UUID_RE.test(String(id||'')); }
+function syncId(){
+  if (crypto && typeof crypto.randomUUID==='function') return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{
+    const r=crypto.getRandomValues(new Uint8Array(1))[0]&15;
+    return (c==='x'?r:(r&3)|8).toString(16);
+  });
+}
 
 const USER_KEY = 'ghk_user';
 let currentUser = localStorage.getItem(USER_KEY) || null;
 
 async function loadData(){
   Store.loadCache();
+  normalizePendingInsertIds();
   if (USE_CLOUD && sb){
     try { await flushPendingOps(); await cloudFetchAll(); subscribeRealtime(); }
     catch(e){ console.warn('Cloud load failed, using local cache', e); online = false; }
@@ -839,10 +849,9 @@ async function cloudFetchAll(){
   online = true;
 }
 
-// Merge cloud rows with whatever is on this device, KEEPING any local entry the
-// cloud doesn't return. This is the safety net for the reported "money shows
-// zero" bug: a cloud read that comes back empty/stale (RLS, replication lag,
-// a paused project) must never erase an entry already saved on the phone.
+// Cloud rows are authoritative. Keep only rows that are genuinely waiting to
+// upload from this device. This lets a delete on one device disappear everywhere
+// else instead of being restored from another device's stale local cache.
 function reconcile(cloudTopups, cloudExpenses, cloudSalaries){
   // Hide rows the user deleted (tombstones) so a cloud read can't bring them back.
   const tomb = new Set(deletedIds);
@@ -854,17 +863,17 @@ function reconcile(cloudTopups, cloudExpenses, cloudSalaries){
   }
   cloudTopups   = cloudTopups.filter(t=>!tomb.has(t.id));
   cloudExpenses = cloudExpenses.filter(e=>!tomb.has(e.id));
-  const tKey = t=>[t.date,t.amount,t.paidBy].join('|');
-  const eKey = e=>[e.date,e.total,e.loggedBy].join('|');
-  const seenT = new Set(cloudTopups.map(tKey));
-  Store.data.topups = cloudTopups.concat(Store.data.topups.filter(t=>!seenT.has(tKey(t))));
-  const seenE = new Set(cloudExpenses.map(eKey));
-  Store.data.expenses = cloudExpenses.concat(Store.data.expenses.filter(e=>!seenE.has(eKey(e))));
-  // Salaries are unique per month: cloud wins, but keep months only on this device,
-  // and let a queued local edit override a stale cloud value for that month.
+  const mergeRows = (cloudRows, localRows, opType)=>{
+    const cloudIds = new Set(cloudRows.map(r=>r.id));
+    const pendingIds = new Set(pendingOps.filter(o=>o.type===opType).map(o=>o.id||o.localId));
+    const unsynced = localRows.filter(r=>!cloudIds.has(r.id) && pendingIds.has(r.id));
+    return cloudRows.concat(unsynced);
+  };
+  Store.data.topups = mergeRows(cloudTopups, Store.data.topups, 'advance');
+  Store.data.expenses = mergeRows(cloudExpenses, Store.data.expenses, 'expense');
+  // Salaries are unique per month. Cloud wins unless this device has a queued edit.
   const byMonth = {};
   cloudSalaries.forEach(s=>byMonth[s.month]=s);
-  Store.data.salaries.forEach(s=>{ if(!(s.month in byMonth)) byMonth[s.month]=s; });
   pendingOps.filter(o=>o.type==='salary').forEach(o=>{
     byMonth[o.payload.month] = { month:o.payload.month, amount:o.payload.amount, paidBy:o.payload.paidBy };
   });
@@ -897,6 +906,22 @@ const PENDING_KEY = 'ghk_pending_v1';
 let pendingOps = [];
 try{ pendingOps = JSON.parse(localStorage.getItem(PENDING_KEY)) || []; }catch(e){}
 function savePendingOps(){ try{ localStorage.setItem(PENDING_KEY, JSON.stringify(pendingOps)); }catch(e){} }
+function normalizePendingInsertIds(){
+  let changed = false;
+  for (const op of pendingOps){
+    if (op.type!=='advance' && op.type!=='expense') continue;
+    const oldId = op.id || op.localId;
+    if (isUuid(oldId)){ op.id=oldId; op.localId=oldId; continue; }
+    const newId = syncId();
+    const rows = op.type==='advance' ? Store.data.topups : Store.data.expenses;
+    const row = rows.find(r=>r.id===oldId);
+    if (row) row.id = newId;
+    op.id = newId;
+    op.localId = newId;
+    changed = true;
+  }
+  if (changed){ Store.cache(); savePendingOps(); }
+}
 
 // Tombstones: ids the user deleted. Kept until a cloud fetch confirms the row is
 // actually gone. This is what makes delete stick even if the cloud accepts the
@@ -909,6 +934,7 @@ function saveDeletedIds(){ try{ localStorage.setItem(DELETED_KEY, JSON.stringify
 function markDeleted(id){ if(!deletedIds.includes(id)){ deletedIds.push(id); saveDeletedIds(); } }
 function queueOp(op){
   if (op.type==='config') pendingOps = pendingOps.filter(p=>!(p.type==='config' && p.key===op.key));
+  if (op.type==='delete') pendingOps = pendingOps.filter(p=>!(p.type==='delete' && p.table===op.table && p.id===op.id));
   pendingOps.push(op); savePendingOps();
 }
 function withTimeout(promise, ms=12000){
@@ -917,15 +943,26 @@ function withTimeout(promise, ms=12000){
 async function performCloudOp(op){
   let res;
   if (op.type==='advance'){ const o=op.payload;
-    res = await withTimeout(sb.from('advances').insert({ date:o.date, amount:o.amount, paid_by:o.paidBy, note:o.note||'' }));
+    res = await withTimeout(sb.from('advances').upsert({
+      id:op.id||op.localId, date:o.date, amount:o.amount, paid_by:o.paidBy, note:o.note||''
+    }, { onConflict:'id' }));
   } else if (op.type==='expense'){ const o=op.payload;
-    res = await withTimeout(sb.from('expenses').insert({ date:o.date, items:o.items, total:o.total, logged_by:o.loggedBy, note:o.note }));
+    res = await withTimeout(sb.from('expenses').upsert({
+      id:op.id||op.localId, date:o.date, items:o.items, total:o.total, logged_by:o.loggedBy, note:o.note||''
+    }, { onConflict:'id' }));
   } else if (op.type==='salary'){ const o=op.payload;
     res = await withTimeout(sb.from('salaries').upsert({ month:o.month, amount:o.amount, paid_by:o.paidBy }, { onConflict:'month' }));
   } else if (op.type==='config'){
     res = await withTimeout(sb.from('app_config').update({ [op.key]:op.value }).eq('id',1));
   } else if (op.type==='delete'){
-    res = await withTimeout(sb.from(op.table).delete().eq('id', op.id));
+    const deleted = await withTimeout(sb.from(op.table).delete().eq('id', op.id).select('id'));
+    if (deleted.error) throw deleted.error;
+    if (!(deleted.data||[]).length){
+      const check = await withTimeout(sb.from(op.table).select('id').eq('id',op.id).maybeSingle());
+      if (check.error) throw check.error;
+      if (check.data) throw new Error('Cloud refused to delete this entry');
+    }
+    return;
   }
   if (res && res.error) throw res.error;
 }
@@ -950,30 +987,21 @@ function syncNotice(err){
 }
 async function cloudWrite(op){
   if (!USE_CLOUD) return;
-  if (!sb){ queueOp(op); online = false; renderSyncGlow(); return; }
-  if (pendingOps.length){
-    queueOp(op); await flushPendingOps();
-    if (pendingOps.length) syncNotice();
-    return;
-  }
-  try{ await performCloudOp(op); }
-  catch(e){
-    console.warn('Cloud save failed, queued for sync', e);
-    queueOp(op); online = false; renderSyncGlow(); syncNotice(e); return;
-  }
-  online = true;
-  try{ await cloudFetchAll(); }catch(e){}
+  queueOp(op);
+  if (!sb){ online = false; renderSyncGlow(); return; }
+  await flushPendingOps();
+  if (pendingOps.length) syncNotice();
 }
 
 async function opAddExpense(o){
-  const row = { id:Store.id(), ...o };
+  const row = { id:syncId(), ...o };
   Store.data.expenses.push(row); Store.cache();
-  await cloudWrite({ type:'expense', payload:o, localId:row.id });
+  await cloudWrite({ type:'expense', payload:o, id:row.id, localId:row.id });
 }
 async function opAddAdvance(o){
-  const row = { id:Store.id(), ...o };
+  const row = { id:syncId(), ...o };
   Store.data.topups.push(row); Store.cache();
-  await cloudWrite({ type:'advance', payload:o, localId:row.id });
+  await cloudWrite({ type:'advance', payload:o, id:row.id, localId:row.id });
 }
 async function opDeleteAdvance(id){
   Store.data.topups = Store.data.topups.filter(t=>t.id!==id); Store.cache();
@@ -992,12 +1020,10 @@ async function cloudDelete(table, id){
   if (pendingInsert !== -1){ pendingOps.splice(pendingInsert,1); savePendingOps(); renderSyncGlow(); return; }
   markDeleted(id);
   const op = { type:'delete', table, id };
-  if (!sb){ queueOp(op); online=false; renderSyncGlow(); return; }
-  if (pendingOps.length){ queueOp(op); await flushPendingOps(); if(pendingOps.length) syncNotice(); return; }
-  try{ await performCloudOp(op); }
-  catch(e){ console.warn('Cloud delete failed, queued', e); queueOp(op); online=false; renderSyncGlow(); syncNotice(e); return; }
-  online = true;
-  try{ await cloudFetchAll(); }catch(e){}
+  queueOp(op);
+  if (!sb){ online=false; renderSyncGlow(); return; }
+  await flushPendingOps();
+  if (pendingOps.length) syncNotice();
 }
 async function opUpsertSalary(o){
   const ex = Store.data.salaries.find(s=>s.month===o.month);
@@ -1444,5 +1470,6 @@ if ('serviceWorker' in navigator){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
 </script>
+<script src="./sync-status.js"></script>
 </body>
 </html>
