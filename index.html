@@ -330,7 +330,7 @@
   .empty-recent .er-title{font-size:17px;font-weight:850}
   .empty-recent .er-sub{font-size:16px;line-height:1.45}
   .empty-recent .er-sub b{color:var(--accent)}
-  .recent-card{border:none;border-radius:0;padding:0;margin:0}
+  .recent-card{background:transparent;border:none;border-radius:0;padding:0;margin:0}
 
   @media (max-width:390px){
     header{padding-left:18px;padding-right:18px}
@@ -534,6 +534,8 @@
   .save-btn-new{min-height:40px;font-size:14px}
   .recent-section{padding:8px 11px}
   .recent-card .list-item{padding:8px 0;font-size:13px}
+  .recent-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:3px}
+  .recent-head .link-btn{flex:none}
 
   /* Quick Add: light background pill */
   .add-expense-card .qa-card{background:var(--qa-bg);border-radius:14px;padding:8px 10px}
@@ -549,8 +551,10 @@
   .hero-add-money{width:68px;min-height:21px;margin:0;padding:3px 5px;border:1px solid rgba(255,255,255,.55);
     border-radius:7px;background:var(--surface);color:var(--accent);font-size:9px;font-weight:750;
     line-height:1.1;white-space:nowrap}
-  .hero-card{align-self:stretch;align-items:center}
+  .hero-card{align-self:stretch;align-items:center;
+    grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr)}
   .hero-card .hero-col{align-self:stretch;justify-content:center}
+  .hero-card .hero-divider{height:62%;align-self:center;transform:translateX(-12px)}
   .smc-label{font-size:11px;margin-bottom:5px}
   .smc-amount{font-size:24px;line-height:1}
   .smc-sub{font-size:10px;margin-top:6px}
@@ -581,6 +585,7 @@
     .smc-label{font-size:10px}
     .smc-amount{font-size:22px}
     .smc-sub{font-size:9px}
+    #balanceSub{font-size:8px}
     .money-summary-view .card{padding:8px 10px}
     .money-view-title{font-size:16px}
   }
@@ -1264,9 +1269,19 @@ function renderHome(){
   const now = new Date(), mon = now.toLocaleDateString('en-IN',{month:'short'});
   $('#monthRange').textContent = `1 ${mon} – ${now.getDate()} ${mon} ${now.getFullYear()}`;
 
-  const recent = [...Store.data.expenses].sort((x,y)=>(y.date+'').localeCompare(x.date+'')).slice(0,5);
-  $('#recentList').innerHTML = recent.length
-    ? `<div class="sec-lbl">Recent shopping</div><div class="recent-card">${recent.map(e=>expenseRow(e)).join('')}</div>`
+  const monthExpenses = Store.data.expenses
+    .filter(e=>e.date.slice(0,7)===thisMonth())
+    .sort((x,y)=>(y.date+'').localeCompare(x.date+''));
+  const shownExpenses = recentShoppingExpanded
+    ? monthExpenses
+    : monthExpenses.slice(0,3);
+  const hasMoreShopping = monthExpenses.length > shownExpenses.length;
+  $('#recentList').innerHTML = monthExpenses.length
+    ? `<div class="recent-head"><div class="sec-lbl">Recent shopping</div>
+        ${(hasMoreShopping||recentShoppingExpanded)
+          ? `<button type="button" class="link-btn" data-toggle-recent>${recentShoppingExpanded?'View less':'View more'}</button>`
+          : ''}</div>
+       <div class="recent-card">${shownExpenses.map(e=>expenseRow(e)).join('')}</div>`
     : `<div class="empty-recent">
         <div class="er-icon"><svg viewBox="0 0 120 84" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="83" cy="68" r="12" fill="#e9efea"/>
@@ -1301,6 +1316,7 @@ function prettyDate(d){ return new Date(d+'T00:00').toLocaleDateString('en-IN',{
 
 let shopItems = [];
 let chipsExpanded = false;
+let recentShoppingExpanded = false;
 function itemUsageCounts(){
   const counts = {};
   Store.data.expenses.forEach(e=>(e.items||[]).forEach(i=>{
@@ -1464,6 +1480,11 @@ $('#quickChips').addEventListener('click',(e)=>{
 $('#addItemLine').onclick = ()=>{ shopItems.push({name:'',amount:''}); renderItemLines(); };
 $('#seeAllChips').onclick = ()=>{ chipsExpanded=!chipsExpanded; renderQuickChips(); };
 $('#clearAllItems').onclick = ()=>{ shopItems=[{name:'',amount:''}]; renderItemLines(); updateShopTotal(); };
+$('#recentList').addEventListener('click',e=>{
+  if (!e.target.closest('[data-toggle-recent]')) return;
+  recentShoppingExpanded=!recentShoppingExpanded;
+  renderHome();
+});
 $('#moneySummaryBtn').onclick = ()=>{ showView('money'); };
 $('#smartAddBtn').onclick = ()=>{
   const raw=prompt('Paste your list (e.g. "Milk 56, Bread 28, Eggs 36"):');
