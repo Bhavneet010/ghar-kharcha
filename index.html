@@ -183,8 +183,23 @@
   .qchip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:7px 4px;
     font-size:9px;font-weight:500;white-space:nowrap;cursor:pointer;color:var(--text);
-    flex-shrink:0;font-family:inherit;width:50px}
+    flex-shrink:0;font-family:inherit;width:50px;position:relative;user-select:none;
+    -webkit-user-select:none;-webkit-touch-callout:none}
   .qchip .ci{font-size:18px;line-height:1}
+  .qchip.selected{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);
+    box-shadow:inset 0 0 0 1px var(--accent)}
+  .qchip.selected::after{content:'✓';position:absolute;right:3px;top:3px;width:13px;height:13px;
+    border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent);
+    color:var(--accent-ink);font-size:9px;font-weight:800}
+  .quick-selection-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    margin-top:7px;padding-top:7px;border-top:1px solid var(--qa-line)}
+  .quick-selection-count{font-size:11px;font-weight:700;color:var(--accent);white-space:nowrap}
+  .quick-selection-actions{display:flex;align-items:center;gap:6px}
+  .quick-selection-actions button{min-height:29px;border-radius:9px;border:1px solid var(--line);
+    padding:5px 9px;background:var(--surface);color:var(--text);font:inherit;font-size:11px;
+    font-weight:700}
+  .quick-selection-actions .add-selected{background:var(--accent);border-color:var(--accent);
+    color:var(--accent-ink)}
   .irow{display:flex;align-items:center;gap:6px;background:var(--inset);
     border:1px solid var(--line);border-radius:11px;padding:5px 6px;margin-bottom:5px}
   .irow .ii{font-size:14px;width:27px;height:27px;flex-shrink:0;line-height:1;
@@ -712,6 +727,13 @@
             <button class="link-btn" id="seeAllChips">See all</button>
           </div>
           <div id="quickChips" class="quick-chips-row"></div>
+          <div id="quickSelectionBar" class="quick-selection-bar hidden">
+            <span id="quickSelectionCount" class="quick-selection-count"></span>
+            <div class="quick-selection-actions">
+              <button type="button" id="cancelQuickSelection">Cancel</button>
+              <button type="button" id="addQuickSelection" class="add-selected"></button>
+            </div>
+          </div>
         </div>
 
         <div class="add-expense-divider"></div>
@@ -1317,6 +1339,11 @@ function prettyDate(d){ return new Date(d+'T00:00').toLocaleDateString('en-IN',{
 let shopItems = [];
 let chipsExpanded = false;
 let recentShoppingExpanded = false;
+let quickMultiSelectMode = false;
+let quickSelectedItems = new Set();
+let quickLongPressTimer = null;
+let quickLongPressStart = null;
+let suppressQuickClick = false;
 function itemUsageCounts(){
   const counts = {};
   Store.data.expenses.forEach(e=>(e.items||[]).forEach(i=>{
@@ -1334,8 +1361,48 @@ function renderQuickChips(){
   const seeBtn=$('#seeAllChips');
   if(seeBtn) seeBtn.textContent = chipsExpanded ? 'Show less' : 'See all';
   box.innerHTML = items.map(n=>
-    `<button class="qchip" data-item="${n}"><span class="ci">${itemEmoji(n)}</span><span class="qchip-label">${n}</span></button>`
+    `<button class="qchip${quickSelectedItems.has(n)?' selected':''}" data-item="${n}"
+      aria-pressed="${quickSelectedItems.has(n)}"><span class="ci">${itemEmoji(n)}</span>
+      <span class="qchip-label">${n}</span></button>`
   ).join('');
+  renderQuickSelection();
+}
+function renderQuickSelection(){
+  const bar=$('#quickSelectionBar');
+  if (!bar) return;
+  const count=quickSelectedItems.size;
+  bar.classList.toggle('hidden',!quickMultiSelectMode);
+  $('#quickSelectionCount').textContent=`${count} selected`;
+  const add=$('#addQuickSelection');
+  add.textContent=count?`Add ${count} item${count===1?'':'s'}`:'Add items';
+  add.disabled=count===0;
+  $$('#quickChips .qchip').forEach(btn=>{
+    const selected=quickSelectedItems.has(btn.dataset.item);
+    btn.classList.toggle('selected',selected);
+    btn.setAttribute('aria-pressed',String(selected));
+  });
+}
+function toggleQuickSelection(item){
+  if (quickSelectedItems.has(item)) quickSelectedItems.delete(item);
+  else quickSelectedItems.add(item);
+  if (!quickSelectedItems.size) quickMultiSelectMode=false;
+  renderQuickSelection();
+}
+function clearQuickSelection(){
+  quickMultiSelectMode=false;
+  quickSelectedItems.clear();
+  suppressQuickClick=false;
+  renderQuickSelection();
+}
+function addQuickItems(items,combine=false){
+  const names=combine ? [items.join(', ')] : items;
+  names.forEach(name=>{
+    const blank=shopItems.find(i=>!i.name);
+    if (blank) blank.name=name;
+    else shopItems.push({name,amount:''});
+  });
+  renderItemLines();
+  updateShopTotal();
 }
 function renderItemLines(){
   const box = $('#itemLines'); box.innerHTML='';
@@ -1468,15 +1535,62 @@ function updateDateLabel(){
 }
 $('#shopDate').addEventListener('change', updateDateLabel);
 
+$('#quickChips').addEventListener('pointerdown',e=>{
+  const btn=e.target.closest('[data-item]');
+  if (!btn || (e.button!==undefined && e.button!==0)) return;
+  quickLongPressStart={x:e.clientX,y:e.clientY};
+  clearTimeout(quickLongPressTimer);
+  quickLongPressTimer=setTimeout(()=>{
+    suppressQuickClick=true;
+    quickMultiSelectMode=true;
+    quickSelectedItems.add(btn.dataset.item);
+    renderQuickSelection();
+  },500);
+});
+$('#quickChips').addEventListener('pointermove',e=>{
+  if (!quickLongPressStart) return;
+  if (Math.hypot(e.clientX-quickLongPressStart.x,e.clientY-quickLongPressStart.y)>10){
+    clearTimeout(quickLongPressTimer);
+    quickLongPressStart=null;
+  }
+});
+['pointerup','pointercancel','pointerleave'].forEach(type=>
+  $('#quickChips').addEventListener(type,()=>{
+    clearTimeout(quickLongPressTimer);
+    quickLongPressStart=null;
+    if (suppressQuickClick) setTimeout(()=>{ suppressQuickClick=false; },0);
+  })
+);
+$('#quickChips').addEventListener('contextmenu',e=>{
+  const btn=e.target.closest('[data-item]'); if(!btn) return;
+  e.preventDefault();
+  quickMultiSelectMode=true;
+  quickSelectedItems.add(btn.dataset.item);
+  renderQuickSelection();
+});
+$('#quickChips').addEventListener('keydown',e=>{
+  const btn=e.target.closest('[data-item]');
+  if (!btn || !e.shiftKey || e.key!=='Enter') return;
+  e.preventDefault();
+  quickMultiSelectMode=true;
+  quickSelectedItems.add(btn.dataset.item);
+  renderQuickSelection();
+});
 $('#quickChips').addEventListener('click',(e)=>{
   const btn = e.target.closest('[data-item]'); if(!btn) return;
-  let line = shopItems.find(i=>!i.name);
-  if (line) line.name = btn.dataset.item; else shopItems.push({name:btn.dataset.item,amount:''});
-  renderItemLines(); updateShopTotal();
+  if (suppressQuickClick){ suppressQuickClick=false; return; }
+  if (quickMultiSelectMode){ toggleQuickSelection(btn.dataset.item); return; }
+  addQuickItems([btn.dataset.item]);
   // focus the amount field of the just-added row
   const rows=$$('.irow'); const last=rows[rows.length-1];
   if(last) last.querySelector('.ia').focus();
 });
+$('#cancelQuickSelection').onclick=clearQuickSelection;
+$('#addQuickSelection').onclick=()=>{
+  if (!quickSelectedItems.size) return;
+  addQuickItems([...quickSelectedItems],true);
+  clearQuickSelection();
+};
 $('#addItemLine').onclick = ()=>{ shopItems.push({name:'',amount:''}); renderItemLines(); };
 $('#seeAllChips').onclick = ()=>{ chipsExpanded=!chipsExpanded; renderQuickChips(); };
 $('#clearAllItems').onclick = ()=>{ shopItems=[{name:'',amount:''}]; renderItemLines(); updateShopTotal(); };
