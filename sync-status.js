@@ -89,9 +89,18 @@
         flashSynced(); return;
       }
       var ops = P.slice(), remaining = [], report = [];
+      var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       for (var i=0;i<ops.length;i++){
-        try{ await performCloudOp(ops[i]); }
-        catch(e){ remaining.push(ops[i]); report.push('• '+opDesc(ops[i])+' → '+errMsg(e)); }
+        var op = ops[i];
+        // A delete whose id is a local id (not a cloud UUID) can never match a
+        // cloud row, so it would fail forever and jam the queue. The item is
+        // already gone locally and was never in the cloud under that id — drop it.
+        if (op.type==='delete' && (!op.id || !UUID_RE.test(String(op.id)))) continue;
+        try{ await performCloudOp(op); }
+        catch(e){
+          if (op.type==='delete' && /invalid input syntax for type uuid/i.test(errMsg(e))) continue;
+          remaining.push(op); report.push('• '+opDesc(op)+' → '+errMsg(e));
+        }
       }
       P.length = 0; for (var j=0;j<remaining.length;j++) P.push(remaining[j]);
       try{ savePendingOps(); }catch(e){}
