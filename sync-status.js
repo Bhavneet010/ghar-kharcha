@@ -15,7 +15,7 @@
   @keyframes syncpulse{0%,100%{opacity:1}50%{opacity:.35}}`;
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
-  var APP_VERSION = 'v51';
+  var APP_VERSION = 'v55';
   var updateReady = false, refreshing = false;
 
   function ensureBar(){
