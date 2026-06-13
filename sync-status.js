@@ -127,6 +127,20 @@
     prevBad = bad; render();
   }, 1500);
 
+  // Automatic cross-device sync: re-pull from the cloud on a short interval so
+  // changes made on another device show up on their own — no refresh needed —
+  // even when the realtime websocket has dropped (common after a phone has been
+  // backgrounded). Skipped while hidden or while the user is typing an entry.
+  function cloudRefresh(){
+    if (document.hidden) return;
+    if (hasUnsavedInput()) return;
+    if (!g(function(){return USE_CLOUD;}) || !g(function(){return sb;})) return;
+    if (typeof cloudFetchAll !== 'function') return;
+    cloudFetchAll().then(function(){ if (typeof renderAll==='function') renderAll(); }).catch(function(){});
+  }
+  setInterval(cloudRefresh, 10000);
+  window.addEventListener('online', cloudRefresh);
+
   // ---- automatic updates: pick up new versions without a manual hard refresh ----
   if ('serviceWorker' in navigator){
     navigator.serviceWorker.addEventListener('controllerchange', function(){
