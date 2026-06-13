@@ -817,36 +817,45 @@ async function cloudFetchAll(){
     sb.from('app_config').select('*').eq('id',1).maybeSingle()
   ]));
   if (adv.error||exp.error||sal.error||cfg.error) throw (adv.error||exp.error||sal.error||cfg.error);
-  Store.data.topups   = (adv.data||[]).map(r=>({id:r.id,date:r.date,amount:Number(r.amount),paidBy:r.paid_by,note:r.note||''}));
-  Store.data.expenses = (exp.data||[]).map(r=>({id:r.id,date:r.date,items:r.items||[],total:Number(r.total),loggedBy:r.logged_by,note:r.note||''}));
-  Store.data.salaries = (sal.data||[]).map(r=>({id:r.id,month:r.month,amount:Number(r.amount),paidBy:r.paid_by}));
+  const cloudTopups   = (adv.data||[]).map(r=>({id:r.id,date:r.date,amount:Number(r.amount),paidBy:r.paid_by,note:r.note||''}));
+  const cloudExpenses = (exp.data||[]).map(r=>({id:r.id,date:r.date,items:r.items||[],total:Number(r.total),loggedBy:r.logged_by,note:r.note||''}));
+  const cloudSalaries = (sal.data||[]).map(r=>({id:r.id,month:r.month,amount:Number(r.amount),paidBy:r.paid_by}));
+  reconcile(cloudTopups, cloudExpenses, cloudSalaries);
   if (cfg.data){
-    Store.data.settings.lowBalanceThreshold = Number(cfg.data.low_balance_threshold);
+    if (cfg.data.low_balance_threshold!=null) Store.data.settings.lowBalanceThreshold = Number(cfg.data.low_balance_threshold);
     Store.data.commonItems = (cfg.data.common_items&&cfg.data.common_items.length)?cfg.data.common_items:DEFAULT_DATA.commonItems;
     if (cfg.data.people && cfg.data.people.length) Store.data.people = cfg.data.people;
   }
-  applyPendingToStore();
+  // Unsynced local config edits (still queued) must win over whatever the cloud returned.
+  pendingOps.filter(o=>o.type==='config').forEach(o=>{
+    if (o.key==='low_balance_threshold') Store.data.settings.lowBalanceThreshold = o.value;
+    else if (o.key==='common_items') Store.data.commonItems = o.value;
+    else if (o.key==='people') Store.data.people = o.value;
+  });
   Store.cache();
   online = true;
 }
 
-// Cloud rows replace the local arrays wholesale, so re-apply anything that is
-// still waiting in the sync queue or it would vanish from the screen.
-function applyPendingToStore(){
-  pendingOps.forEach((op,i)=>{
-    const pid = 'pending-'+i;
-    if (op.type==='advance') Store.data.topups.push({ id:pid, ...op.payload });
-    else if (op.type==='expense') Store.data.expenses.push({ id:pid, ...op.payload });
-    else if (op.type==='salary'){
-      const ex = Store.data.salaries.find(s=>s.month===op.payload.month);
-      if (ex){ ex.amount=op.payload.amount; ex.paidBy=op.payload.paidBy; }
-      else Store.data.salaries.push({ id:pid, ...op.payload });
-    } else if (op.type==='config'){
-      if (op.key==='low_balance_threshold') Store.data.settings.lowBalanceThreshold = op.value;
-      else if (op.key==='common_items') Store.data.commonItems = op.value;
-      else if (op.key==='people') Store.data.people = op.value;
-    }
+// Merge cloud rows with whatever is on this device, KEEPING any local entry the
+// cloud doesn't return. This is the safety net for the reported "money shows
+// zero" bug: a cloud read that comes back empty/stale (RLS, replication lag,
+// a paused project) must never erase an entry already saved on the phone.
+function reconcile(cloudTopups, cloudExpenses, cloudSalaries){
+  const tKey = t=>[t.date,t.amount,t.paidBy].join('|');
+  const eKey = e=>[e.date,e.total,e.loggedBy].join('|');
+  const seenT = new Set(cloudTopups.map(tKey));
+  Store.data.topups = cloudTopups.concat(Store.data.topups.filter(t=>!seenT.has(tKey(t))));
+  const seenE = new Set(cloudExpenses.map(eKey));
+  Store.data.expenses = cloudExpenses.concat(Store.data.expenses.filter(e=>!seenE.has(eKey(e))));
+  // Salaries are unique per month: cloud wins, but keep months only on this device,
+  // and let a queued local edit override a stale cloud value for that month.
+  const byMonth = {};
+  cloudSalaries.forEach(s=>byMonth[s.month]=s);
+  Store.data.salaries.forEach(s=>{ if(!(s.month in byMonth)) byMonth[s.month]=s; });
+  pendingOps.filter(o=>o.type==='salary').forEach(o=>{
+    byMonth[o.payload.month] = { month:o.payload.month, amount:o.payload.amount, paidBy:o.payload.paidBy };
   });
+  Store.data.salaries = Object.values(byMonth);
 }
 
 let rtBound = false;
