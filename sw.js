@@ -1,12 +1,13 @@
 // Service worker — offline caching for the PWA.
 // Bump CACHE version whenever you change app files so clients update.
-const CACHE = 'ghar-kharcha-v37';
+const CACHE = 'ghar-kharcha-v38';
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon.svg',
-  './icon-maskable.svg'
+  './icon-maskable.svg',
+  './sync-status.js'
 ];
 
 self.addEventListener('install', (e) => {
@@ -21,16 +22,25 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Load the sync-status module into the app shell without editing index.html.
+function injectSync(html) {
+  if (html.indexOf('sync-status.js') !== -1) return html;
+  return html.replace('</body>', '<script src="./sync-status.js"></script>\n</body>');
+}
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put('./index.html', copy));
-        return res;
-      }).catch(() => caches.match('./index.html'))
+      fetch(req).then((res) =>
+        res.text().then((html) => {
+          const body = injectSync(html);
+          const headers = { 'Content-Type': 'text/html; charset=utf-8' };
+          caches.open(CACHE).then((c) => c.put('./index.html', new Response(body, { headers })));
+          return new Response(body, { headers });
+        })
+      ).catch(() => caches.match('./index.html'))
     );
     return;
   }
