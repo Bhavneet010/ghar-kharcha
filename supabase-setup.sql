@@ -28,7 +28,7 @@ create table if not exists expenses (
 
 create table if not exists salaries (
   id        uuid primary key default gen_random_uuid(),
-  month     text unique not null,     -- 'YYYY-MM'
+  month     text unique not null,     -- 'YYYY-MM:userId'; legacy 'YYYY-MM' rows still work
   amount    numeric not null,
   paid_by   text not null
 );
@@ -47,6 +47,11 @@ alter table app_config add column if not exists people jsonb;
 insert into app_config (id, low_balance_threshold, common_items)
 values (1, 1000, '["Milk","Bread","Eggs","Atta","Rice","Dal","Onion","Tomato","Potato","Mixed vegetables","Curd","Paneer","Cooking oil","Sugar","Tea","Salt","Green chilli","Ginger-garlic","Coriander","Fruits","Chicken","Spices","Ghee"]'::jsonb)
 on conflict (id) do nothing;
+
+-- shared default amount each payer confirms monthly
+insert into salaries (month, amount, paid_by)
+values ('__monthly_salary_amount__', 1500, 'config')
+on conflict (month) do nothing;
 
 -- ---------- Access for the app's anon key ----------
 grant usage on schema public to anon, authenticated;

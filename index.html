@@ -68,6 +68,23 @@
   .cloud-error strong{display:block;font-size:14px;margin-bottom:3px}
   .cloud-error button{margin-top:9px;border:1px solid currentColor;background:transparent;color:inherit;
     border-radius:6px;padding:7px 10px;font:inherit;font-weight:700;cursor:pointer}
+  .salary-reminder{background:var(--warn-bg);color:var(--warn);border:1px solid currentColor;
+    border-radius:8px;padding:12px 14px;margin-bottom:12px;font-size:13px;line-height:1.45}
+  .salary-reminder strong{display:block;font-size:14px;margin-bottom:3px}
+  .salary-reminder .actions{display:flex;gap:8px;margin-top:10px}
+  .salary-reminder button,.salary-dialog button{border:1px solid currentColor;background:transparent;color:inherit;
+    border-radius:6px;padding:8px 11px;font:inherit;font-weight:700;cursor:pointer}
+  .salary-reminder button.primary,.salary-dialog button.primary{background:var(--accent);border-color:var(--accent);
+    color:var(--accent-ink)}
+  .salary-modal{position:fixed;inset:0;z-index:100;background:rgba(10,16,24,.58);
+    display:flex;align-items:center;justify-content:center;padding:20px}
+  .salary-dialog{width:min(100%,420px);background:var(--surface);color:var(--text);border:1px solid var(--line);
+    border-radius:8px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,.24)}
+  .salary-dialog h2{font-size:19px;margin:0 0 8px}
+  .salary-dialog p{color:var(--muted);font-size:14px;margin:0}
+  .salary-dialog .amount{font-size:28px;font-weight:750;color:var(--accent);margin:14px 0 4px}
+  .salary-dialog .actions{display:flex;gap:9px;margin-top:18px}
+  .salary-dialog .actions button{flex:1}
   label{display:block;font-size:13px;color:var(--muted);margin:16px 0 7px}
   input,select{width:100%;padding:14px;background:var(--inset);border:1px solid transparent;
     color:var(--text);border-radius:13px;font-size:16px;font-family:inherit}
@@ -629,6 +646,7 @@
       </div>
 
       <div id="syncErrorSlot" class="cloud-error" role="alert" aria-live="assertive"></div>
+      <div id="salaryReminderSlot"></div>
       <div id="alertSlot"></div>
 
       <!-- Add Expenses heading row -->
@@ -708,13 +726,7 @@
 
       <div class="card">
         <h3>Cook's monthly salary</h3>
-        <label>Month</label>
-        <input type="month" id="salMonth" />
-        <label>Amount</label>
-        <input type="number" id="salAmt" inputmode="numeric" placeholder="e.g. 8000" />
-        <label>Paid by</label>
-        <div class="seg" id="salPaidBy"></div>
-        <button class="btn" id="saveSal">Record salary</button>
+        <p class="muted small">Each payer confirms their own monthly payment.</p>
         <div id="salList" style="margin-top:14px"></div>
       </div>
     </section>
@@ -748,6 +760,12 @@
         <button class="btn sec" id="enableNotif">Enable phone notifications</button>
       </div>
       <div class="card">
+        <h3>Monthly salary payment</h3>
+        <label>Amount each payer confirms every month</label>
+        <input type="number" id="setSalaryAmount" inputmode="numeric" min="1" />
+        <button class="btn sec" id="saveSalaryAmount">Save salary amount</button>
+      </div>
+      <div class="card">
         <h3>Quick-add item list</h3>
         <div id="itemEditor"></div>
         <div class="row" style="margin-top:10px">
@@ -774,6 +792,19 @@
       </div>
     </section>
   </main>
+</div>
+
+<div id="salaryModal" class="salary-modal hidden" role="dialog" aria-modal="true" aria-labelledby="salaryModalTitle">
+  <div class="salary-dialog">
+    <h2 id="salaryModalTitle">Salary payment pending</h2>
+    <p id="salaryModalText"></p>
+    <div class="amount" id="salaryModalAmount"></div>
+    <p>Only confirm after you have paid your share.</p>
+    <div class="actions">
+      <button type="button" data-salary-later>Not yet</button>
+      <button type="button" class="primary" data-confirm-salary>Yes, I paid</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -806,8 +837,9 @@ const DEFAULT_DATA = {
   commonItems: ['Milk','Bread','Eggs','Atta','Rice','Dal','Onion','Tomato','Potato',
     'Mixed vegetables','Curd','Paneer','Cooking oil','Sugar','Tea','Salt',
     'Green chilli','Ginger-garlic','Coriander','Fruits','Chicken','Spices','Ghee'],
-  settings: { lowBalanceThreshold: 1000 }
+  settings: { lowBalanceThreshold: 1000, monthlySalaryAmount: 1500 }
 };
+const SALARY_CONFIG_MONTH = '__monthly_salary_amount__';
 const Store = {
   data: structuredClone(DEFAULT_DATA),
   id(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
@@ -875,7 +907,17 @@ async function cloudFetchAll(operation='Refreshing cloud data'){
   const next = structuredClone(DEFAULT_DATA);
   next.topups = (adv.data||[]).map(r=>({id:r.id,date:r.date,amount:Number(r.amount),paidBy:r.paid_by,note:r.note||''}));
   next.expenses = (exp.data||[]).map(r=>({id:r.id,date:r.date,items:r.items||[],total:Number(r.total),loggedBy:r.logged_by,note:r.note||''}));
-  next.salaries = (sal.data||[]).map(r=>({id:r.id,month:r.month,amount:Number(r.amount),paidBy:r.paid_by}));
+  next.salaries = [];
+  (sal.data||[]).forEach(r=>{
+    if (r.month===SALARY_CONFIG_MONTH){
+      next.settings.monthlySalaryAmount=Number(r.amount)||1500;
+      return;
+    }
+    next.salaries.push({
+      id:r.id, storageMonth:r.month, month:salaryBaseMonth(r.month),
+      amount:Number(r.amount), paidBy:r.paid_by
+    });
+  });
   if (cfg.data){
     if (cfg.data.low_balance_threshold!=null) next.settings.lowBalanceThreshold = Number(cfg.data.low_balance_threshold);
     next.commonItems = (cfg.data.common_items&&cfg.data.common_items.length)?cfg.data.common_items:DEFAULT_DATA.commonItems;
@@ -912,7 +954,10 @@ async function runOp(fn){
   catch(e){ console.error('Cloud operation failed',e); }
   finally{ busy = false; window.appBusy = false; setButtonsDisabled(false); }
 }
-function setButtonsDisabled(v){ ['#saveShop','#saveTop','#saveSal'].forEach(s=>{const b=$(s); if(b)b.disabled=v;}); }
+function setButtonsDisabled(v){
+  ['#saveShop','#saveTop','#saveSalaryAmount'].forEach(s=>{const b=$(s); if(b)b.disabled=v;});
+  $$('[data-confirm-salary]').forEach(b=>b.disabled=v);
+}
 
 function withTimeout(promise, ms=12000){
   return Promise.race([promise, new Promise((_,rej)=>setTimeout(()=>rej(new Error('Request timed out')), ms))]);
@@ -930,7 +975,12 @@ async function performCloudOp(op){
     }, { onConflict:'id' }).select('*').single());
   } else if (op.type==='salary'){ const o=op.payload;
     res = await withTimeout(sb.from('salaries').upsert(
-      { month:o.month, amount:o.amount, paid_by:o.paidBy }, { onConflict:'month' }
+      { month:o.storageMonth||salaryStorageMonth(o.month,o.paidBy), amount:o.amount, paid_by:o.paidBy },
+      { onConflict:'month' }
+    ).select('*').single());
+  } else if (op.type==='salaryConfig'){
+    res = await withTimeout(sb.from('salaries').upsert(
+      { month:SALARY_CONFIG_MONTH, amount:op.value, paid_by:'config' }, { onConflict:'month' }
     ).select('*').single());
   } else if (op.type==='config'){
     res = await withTimeout(sb.from('app_config').update({ [op.key]:op.value }).eq('id',1).select('*').single());
@@ -956,8 +1006,13 @@ function applyCloudConfirmation(op, data){
     const row = {id:data.id,date:data.date,items:data.items||[],total:Number(data.total),loggedBy:data.logged_by,note:data.note||''};
     Store.data.expenses = Store.data.expenses.filter(r=>r.id!==row.id).concat(row);
   } else if (op.type==='salary'){
-    const row = {id:data.id,month:data.month,amount:Number(data.amount),paidBy:data.paid_by};
-    Store.data.salaries = Store.data.salaries.filter(r=>r.month!==row.month).concat(row);
+    const row = {
+      id:data.id,storageMonth:data.month,month:salaryBaseMonth(data.month),
+      amount:Number(data.amount),paidBy:data.paid_by
+    };
+    Store.data.salaries = Store.data.salaries.filter(r=>r.storageMonth!==row.storageMonth).concat(row);
+  } else if (op.type==='salaryConfig'){
+    Store.data.settings.monthlySalaryAmount=Number(data.amount)||1500;
   } else if (op.type==='config'){
     if (data.low_balance_threshold!=null) Store.data.settings.lowBalanceThreshold=Number(data.low_balance_threshold);
     if (data.common_items) Store.data.commonItems=data.common_items;
@@ -978,7 +1033,7 @@ function applyRealtimeChange(payload){
   } else if (payload.table==='expenses'){
     applyCloudConfirmation({type:'expense'},row);
   } else if (payload.table==='salaries'){
-    applyCloudConfirmation({type:'salary'},row);
+    applyCloudConfirmation({type:row.month===SALARY_CONFIG_MONTH?'salaryConfig':'salary'},row);
   } else if (payload.table==='app_config'){
     applyCloudConfirmation({type:'config'},row);
   }
@@ -1034,6 +1089,9 @@ async function opDeleteExpense(id){
 async function opUpsertSalary(o){
   await cloudMutate('Saving salary',{ type:'salary', payload:o });
 }
+async function opSetSalaryAmount(amount){
+  await cloudMutate('Saving monthly salary amount',{ type:'salaryConfig', value:amount });
+}
 async function opSetThreshold(n){
   await cloudMutate('Saving low-balance alert',{ type:'config', key:'low_balance_threshold', value:n });
 }
@@ -1080,9 +1138,14 @@ function itemEmoji(name){
 }
 const today = () => new Date().toISOString().slice(0,10);
 const thisMonth = () => new Date().toISOString().slice(0,7);
+const salaryBaseMonth = (month) => String(month||'').split(':')[0];
+const salaryStorageMonth = (month,payerId) => `${month}:${payerId}`;
 const personById = (id) => Store.data.people.find(p=>p.id===id) || {name:'?'};
 const personClass = (id) => id==='b'?'person-b':id==='r'?'person-r':'person-c';
 function payers(){ return Store.data.people.filter(p=>p.role==='payer'); }
+function hasSalaryPayment(month,payerId){
+  return Store.data.salaries.some(s=>s.month===month && s.paidBy===payerId);
+}
 
 function balance(){
   const ins = Store.data.topups.reduce((s,t)=>s+Number(t.amount),0);
@@ -1103,8 +1166,9 @@ function monthTotals(m=thisMonth()){
 
 function renderAll(){
   renderHome(); renderQuickChips(); renderItemEditor(); renderPeople();
-  renderSalList(); renderHistory(); renderPaidBySegs(); renderSyncGlow();
+  renderSalList(); renderHistory(); renderPaidBySegs(); renderSyncGlow(); renderSalaryReminder();
   $('#setThreshold').value = Store.data.settings.lowBalanceThreshold;
+  $('#setSalaryAmount').value = Store.data.settings.monthlySalaryAmount;
   const p = personById(currentUser);
   $('#switchUser').textContent = (p.name||'?')[0].toUpperCase();
 }
@@ -1242,7 +1306,7 @@ function renderItemLines(){
 function updateShopTotal(){ $('#shopTotal').textContent = fmt(shopItems.reduce((s,i)=>s+(Number(i.amount)||0),0)); }
 
 function renderPaidBySegs(){
-  ['#topPaidBy','#salPaidBy'].forEach(sel=>{
+  ['#topPaidBy'].forEach(sel=>{
     const box = $(sel); box.innerHTML='';
     payers().forEach((p,i)=>{
       const b = document.createElement('button');
@@ -1254,21 +1318,61 @@ function renderPaidBySegs(){
 }
 function pickedPayer(sel){ const a=$(sel+' .pill.active'); return a?a.dataset.id:payers()[0].id; }
 function renderSalList(){
-  const list = [...Store.data.salaries].sort((a,b)=>b.month.localeCompare(a.month)).slice(0,6);
-  $('#salList').innerHTML = list.length
-    ? list.map(s=>`<div class="list-item"><div>${monthLabel(s.month)}
+  const month = thisMonth();
+  const status = payers().map(p=>{
+    const payment=Store.data.salaries.find(s=>s.month===month&&s.paidBy===p.id);
+    return `<div class="list-item"><div><span class="${personClass(p.id)}">●</span> ${p.name}
+      <div class="muted small">${monthLabel(month)}</div></div>
+      <span class="amt" style="color:${payment?'var(--accent)':'var(--warn)'}">
+        ${payment?'Paid '+fmt(payment.amount):'Pending'}</span></div>`;
+  }).join('');
+  const recent=[...Store.data.salaries].sort((a,b)=>b.month.localeCompare(a.month)).slice(0,6);
+  $('#salList').innerHTML = status+
+    (recent.length?`<div class="muted small" style="margin-top:14px">Recent confirmations</div>`+
+      recent.map(s=>`<div class="list-item"><div>${monthLabel(s.month)}
         <div class="muted small">by ${personById(s.paidBy).name}</div></div>
-        <span class="amt">${fmt(s.amount)}</span></div>`).join('')
-    : '<div class="muted small">No salary recorded yet.</div>';
+        <span class="amt">${fmt(s.amount)}</span></div>`).join(''):'');
 }
-function monthLabel(m){ return new Date(m+'-01T00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'}); }
+function monthLabel(m){ return new Date(salaryBaseMonth(m)+'-01T00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'}); }
+
+let salaryPromptDismissedKey = '';
+function salaryReminderKey(){ return `${thisMonth()}:${currentUser||''}`; }
+function renderSalaryReminder(){
+  const slot=$('#salaryReminderSlot'), modal=$('#salaryModal');
+  const person=personById(currentUser);
+  const pending=person.role==='payer' && !hasSalaryPayment(thisMonth(),currentUser);
+  if (!pending){
+    slot.innerHTML=''; modal.classList.add('hidden'); return;
+  }
+  const amount=Number(Store.data.settings.monthlySalaryAmount)||1500;
+  const month=monthLabel(thisMonth());
+  slot.innerHTML=`<div class="salary-reminder">
+    <strong>Cook's salary for ${month} is still pending</strong>
+    <div>${escapeHtml(person.name)}, confirm once you have paid your ${fmt(amount)} share.</div>
+    <div class="actions"><button type="button" class="primary" data-confirm-salary>Yes, I paid</button></div>
+  </div>`;
+  $('#salaryModalText').textContent=`${person.name}, have you paid the cook's salary for ${month}?`;
+  $('#salaryModalAmount').textContent=fmt(amount);
+  if (salaryPromptDismissedKey!==salaryReminderKey()) modal.classList.remove('hidden');
+}
+async function confirmCurrentSalary(){
+  const person=personById(currentUser);
+  if (person.role!=='payer' || hasSalaryPayment(thisMonth(),currentUser)) return;
+  const amount=Number(Store.data.settings.monthlySalaryAmount)||1500;
+  await opUpsertSalary({
+    month:thisMonth(), storageMonth:salaryStorageMonth(thisMonth(),currentUser),
+    amount, paidBy:currentUser
+  });
+  salaryPromptDismissedKey='';
+  renderAll();
+}
 
 let histFilter = 'all';
 function renderHistory(){
   let rows = [];
   Store.data.expenses.forEach(e=>rows.push({type:'expense',date:e.date,obj:e}));
   Store.data.topups.forEach(t=>rows.push({type:'topup',date:t.date,obj:t}));
-  Store.data.salaries.forEach(s=>rows.push({type:'salary',date:s.month+'-01',obj:s}));
+  Store.data.salaries.forEach(s=>rows.push({type:'salary',date:salaryBaseMonth(s.month)+'-01',obj:s}));
   rows = rows.filter(r=>histFilter==='all'||r.type===histFilter).sort((a,b)=>(b.date+'').localeCompare(a.date+''));
   const box = $('#historyList');
   if (!rows.length){ box.innerHTML='<div class="empty">Nothing here yet.</div>'; return; }
@@ -1362,14 +1466,6 @@ $('#saveTop').onclick = ()=> runOp(async ()=>{
   $('#topAmt').value=''; renderAll(); goHome();
 });
 
-$('#saveSal').onclick = ()=> runOp(async ()=>{
-  const amt = Number($('#salAmt').value), m = $('#salMonth').value || thisMonth();
-  if (!(amt>0)){ alert('Enter the salary amount.'); return; }
-  if (Store.data.salaries.find(s=>s.month===m) && !confirm('Salary for this month already recorded. Replace it?')) return;
-  await opUpsertSalary({ month:m, amount:amt, paidBy:pickedPayer('#salPaidBy') });
-  $('#salAmt').value=''; renderAll();
-});
-
 $('#view-history').addEventListener('click',(e)=>{
   const del = e.target.closest('[data-del]');
   if (del){
@@ -1387,6 +1483,11 @@ $('#view-history').addEventListener('click',(e)=>{
 });
 
 $('#setThreshold').onchange = ()=> runOp(async ()=>{ await opSetThreshold(Number($('#setThreshold').value)||0); renderHome(); });
+$('#saveSalaryAmount').onclick = ()=> runOp(async ()=>{
+  const amount=Number($('#setSalaryAmount').value);
+  if (!(amount>0)){ alert('Enter a salary amount greater than zero.'); return; }
+  await opSetSalaryAmount(amount); renderAll();
+});
 $('#addCommon').onclick = ()=> runOp(async ()=>{
   const v = $('#newItemName').value.trim(); if(!v) return;
   const arr = [...Store.data.commonItems]; if(!arr.includes(v)) arr.push(v);
@@ -1455,6 +1556,7 @@ document.addEventListener('click',(e)=>{ if(!e.target.closest('.avatar-wrap')) $
 $('#menuSettings').onclick = ()=>{ $('#avatarMenu').classList.add('hidden'); showView('settings'); };
 $('#menuSwitch').onclick = ()=>{ $('#avatarMenu').classList.add('hidden'); showLogin(); };
 function showLogin(){
+  $('#salaryModal').classList.add('hidden');
   $('#app').classList.add('hidden'); $('#login').classList.remove('hidden');
   $('#loginPeople').innerHTML = Store.data.people.map(p=>
     `<button class="btn sec" data-id="${p.id}" style="margin-top:10px;text-align:left">
@@ -1464,10 +1566,19 @@ function showLogin(){
 $('#loginPeople').onclick = (e)=>{
   const b = e.target.closest('[data-id]'); if(!b) return;
   currentUser = b.dataset.id; localStorage.setItem(USER_KEY,currentUser);
+  salaryPromptDismissedKey='';
   $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
   renderAll(); resetShopForm(); goHome();
 };
 function goHome(){ showView('home'); }
+
+[$('#salaryReminderSlot'),$('#salaryModal')].forEach(root=>root.addEventListener('click',e=>{
+  if (e.target.closest('[data-confirm-salary]')) runOp(confirmCurrentSalary);
+  if (e.target.closest('[data-salary-later]')){
+    salaryPromptDismissedKey=salaryReminderKey();
+    $('#salaryModal').classList.add('hidden');
+  }
+}));
 
 [$('#syncErrorSlot'),$('#loginSyncErrorSlot')].forEach(slot=>slot.addEventListener('click',async e=>{
   if (e.target.closest('[data-retry-cloud]')) await manualCloudSync('Retrying cloud connection');

@@ -26,6 +26,10 @@ foreground refreshes. Financial entries are not stored in `localStorage`.
 If Supabase cannot be reached or rejects a change, the app leaves that change
 unsaved and shows the operation and cloud error on the home screen.
 
+Each non-cook user confirms their own cook-salary payment once per month. The
+default amount per payer is stored in Supabase and can be changed in Settings.
+Until a payer confirms, the app shows a monthly pending reminder for that user.
+
 ## Notes
 - Currency is INR (₹). The cook only logs shopping and never pays.
 - "Who pays next" = whoever (you or Ritika) has contributed less so far; the app shows
