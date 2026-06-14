@@ -15,7 +15,7 @@
   @keyframes syncpulse{0%,100%{opacity:1}50%{opacity:.35}}`;
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
-  var APP_VERSION = 'v66';
+  var APP_VERSION = 'v67';
   var updateReady = false, refreshing = false;
 
   function ensureBar(){
@@ -37,6 +37,7 @@
     var st = window.cloudSyncState;
     if (!cloud || !s) return ['warn','Cloud unavailable — tap to retry'];
     if (st && st.status==='error') return ['warn',(st.operation||'Cloud sync failed')+' — tap to retry'];
+    if (st && (st.status==='loading'||st.status==='syncing') && st.operation==='Checking for changes from other devices') return null;
     if (st && (st.status==='loading'||st.status==='syncing')) return ['update',st.operation||'Syncing cloud data…'];
     return null;
   }
