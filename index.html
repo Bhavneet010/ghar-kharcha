@@ -982,8 +982,8 @@ async function cloudFetchAll(operation='Refreshing cloud data'){
   });
   if (cfg.data){
     if (cfg.data.low_balance_threshold!=null) next.settings.lowBalanceThreshold = Number(cfg.data.low_balance_threshold);
-    next.commonItems = (cfg.data.common_items&&cfg.data.common_items.length)?cfg.data.common_items:DEFAULT_DATA.commonItems;
-    if (cfg.data.people && cfg.data.people.length) next.people = cfg.data.people;
+    next.commonItems = (cfg.data.common_items&&cfg.data.common_items.length)?cfg.data.common_items:Store.data.commonItems;
+    next.people = (cfg.data.people&&cfg.data.people.length)?cfg.data.people:Store.data.people;
   }
   // A mutation began while this request was in flight. Its pre-mutation result
   // must never overwrite the row Supabase just confirmed.
