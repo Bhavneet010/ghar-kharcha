@@ -1233,6 +1233,9 @@ function renderAll(){
   $('#setSalaryAmount').value = Store.data.settings.monthlySalaryAmount;
   const p = personById(currentUser);
   $('#switchUser').textContent = (p.name||'?')[0].toUpperCase();
+  const isCook = p.role==='cook';
+  $('#menuSettings').classList.toggle('hidden', isCook);
+  $('#moneySummaryBtn').classList.toggle('hidden', isCook);
 }
 function renderSyncGlow(){
   const av = $('#switchUser');
