@@ -1217,7 +1217,6 @@ function balance(){
 function contributions(){
   const map = {}; payers().forEach(p=>map[p.id]=0);
   Store.data.topups.forEach(t=>{ if(t.paidBy in map) map[t.paidBy]+=Number(t.amount); });
-  Store.data.salaries.forEach(s=>{ if(s.paidBy in map) map[s.paidBy]+=Number(s.amount); });
   return map;
 }
 function monthTotals(m=thisMonth()){
