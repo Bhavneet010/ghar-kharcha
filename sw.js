@@ -1,13 +1,14 @@
 // Service worker — offline caching for the PWA.
 // Bump CACHE version whenever you change app files so clients update.
-const CACHE = 'ghar-kharcha-v72';
+const CACHE = 'ghar-kharcha-v73';
+const SYNC_STATUS_URL = './sync-status.js?v=' + CACHE;
 const ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './icon.svg',
   './icon-maskable.svg',
-  './sync-status.js'
+  SYNC_STATUS_URL
 ];
 
 self.addEventListener('install', (e) => {
@@ -25,7 +26,7 @@ self.addEventListener('activate', (e) => {
 // Load the sync-status module into the app shell without editing index.html.
 function injectSync(html) {
   if (html.indexOf('sync-status.js') !== -1) return html;
-  return html.replace('</body>', '<script src="./sync-status.js"></script>\n</body>');
+  return html.replace('</body>', '<script src="' + SYNC_STATUS_URL + '"></script>\n</body>');
 }
 
 self.addEventListener('fetch', (e) => {
