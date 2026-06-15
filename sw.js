@@ -1,6 +1,6 @@
 // Service worker — offline caching for the PWA.
 // Bump CACHE version whenever you change app files so clients update.
-const CACHE = 'ghar-kharcha-v70';
+const CACHE = 'ghar-kharcha-v71';
 const ASSETS = [
   './',
   './index.html',
@@ -40,7 +40,7 @@ self.addEventListener('fetch', (e) => {
   }
   if (req.mode === 'navigate') {
     e.respondWith(
-      fetch(req).then((res) =>
+      fetch(req, { cache: 'no-store' }).then((res) =>
         res.text().then((html) => {
           const body = injectSync(html);
           const headers = { 'Content-Type': 'text/html; charset=utf-8' };
