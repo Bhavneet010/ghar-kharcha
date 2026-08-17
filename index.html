@@ -123,6 +123,22 @@
   .empty{text-align:center;color:var(--muted);padding:32px 10px;font-size:14px;line-height:1.6}
   .seg{display:flex;gap:8px;margin-top:6px}
   .seg .pill{margin:0;flex:1;justify-content:center}
+  /* Activity grouped by month */
+  .month-group{border-bottom:1px solid var(--line)}
+  .month-group:last-child{border-bottom:none}
+  .month-head{display:flex;align-items:center;gap:10px;width:100%;padding:13px 0;margin:0;
+    background:none;border:none;font-family:inherit;color:var(--text);text-align:left;cursor:pointer}
+  .month-chev{display:inline-flex;flex:none;color:var(--muted);transition:transform .16s ease}
+  .month-chev svg{width:16px;height:16px}
+  .month-group.open .month-chev{transform:rotate(90deg)}
+  .month-head .mh-main{flex:1;min-width:0}
+  .month-name{display:block;font-size:14px;font-weight:700;letter-spacing:-.1px}
+  .month-count{display:block;font-size:11px;color:var(--muted);margin-top:1px}
+  .month-totals{margin-left:auto;flex:none;text-align:right;line-height:1.35}
+  .month-totals span{display:block;font-size:12px;font-weight:700;white-space:nowrap}
+  .mt-credit{color:var(--accent)}
+  .mt-debit{color:var(--danger)}
+  .month-body{padding-bottom:6px}
   /* ── redesigned home ── */
   .header-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
   .avatar-wrap{position:relative;flex-shrink:0}
@@ -594,6 +610,12 @@
   .money-summary-view .list-item .small{font-size:10px}
   .money-summary-view .banner{padding:8px 9px;margin:5px 0 3px!important;font-size:11px;border-radius:10px}
   .money-summary-view .activity-card{padding-bottom:4px}
+  .money-summary-view .month-head{padding:7px 0;gap:7px}
+  .money-summary-view .month-chev svg{width:14px;height:14px}
+  .money-summary-view .month-name{font-size:12.5px}
+  .money-summary-view .month-count{font-size:10px}
+  .money-summary-view .month-totals span{font-size:11px}
+  .money-summary-view .month-body{padding-bottom:2px}
 
   @media (max-width:390px){
     .hero-add-money{width:64px;font-size:8.5px}
@@ -1482,6 +1504,20 @@ async function confirmCurrentSalary(){
 }
 
 let histFilter = 'all';
+let histOpenMonths = null; // Set of 'YYYY-MM' groups that are expanded; null until the first render
+function historyRowHtml(r){
+  let row;
+  if (r.type==='expense') row = expenseRow(r.obj);
+  else if (r.type==='topup') row = `<div class="list-item"><div><span class="tag">Advance</span>
+      ${prettyDate(r.obj.date)} <div class="muted small">paid by ${personById(r.obj.paidBy).name}${r.obj.note?' · '+r.obj.note:''}</div></div>
+      <span class="amt" style="color:var(--accent)">+${fmt(r.obj.amount)}</span></div>`;
+  else return `<div class="list-item"><div><span class="tag">Salary</span> ${monthLabel(r.obj.month)}
+      <div class="muted small">paid by ${personById(r.obj.paidBy).name}</div></div>
+      <span class="amt">${fmt(r.obj.amount)}</span></div>`;
+  // expenses & advances can be removed if added by mistake
+  const del = `<button class="row-del" data-del="${r.type}" data-id="${r.obj.id}" title="Delete" aria-label="Delete">${trashSVG}</button>`;
+  return row.replace(/<\/div>\s*$/, del+'</div>');
+}
 function renderHistory(){
   let rows = [];
   Store.data.expenses.forEach(e=>rows.push({type:'expense',date:e.date,obj:e}));
@@ -1490,21 +1526,44 @@ function renderHistory(){
   rows = rows.filter(r=>histFilter==='all'||r.type===histFilter).sort((a,b)=>(b.date+'').localeCompare(a.date+''));
   const box = $('#historyList');
   if (!rows.length){ box.innerHTML='<div class="empty">Nothing here yet.</div>'; return; }
-  box.innerHTML = rows.map(r=>{
-    let row;
-    if (r.type==='expense') row = expenseRow(r.obj);
-    else if (r.type==='topup') row = `<div class="list-item"><div><span class="tag">Advance</span>
-        ${prettyDate(r.obj.date)} <div class="muted small">paid by ${personById(r.obj.paidBy).name}${r.obj.note?' · '+r.obj.note:''}</div></div>
-        <span class="amt" style="color:var(--accent)">+${fmt(r.obj.amount)}</span></div>`;
-    else return `<div class="list-item"><div><span class="tag">Salary</span> ${monthLabel(r.obj.month)}
-        <div class="muted small">paid by ${personById(r.obj.paidBy).name}</div></div>
-        <span class="amt">${fmt(r.obj.amount)}</span></div>`;
-    // expenses & advances can be removed if added by mistake
-    const del = `<button class="row-del" data-del="${r.type}" data-id="${r.obj.id}" title="Delete" aria-label="Delete">${trashSVG}</button>`;
-    return row.replace(/<\/div>\s*$/, del+'</div>');
+
+  // newest month first — advances count as credit, shopping & salary as debit
+  const groups = [], byMonth = new Map();
+  rows.forEach(r=>{
+    const key = String(r.date).slice(0,7);
+    let g = byMonth.get(key);
+    if (!g){ g = {key, rows:[], credit:0, debit:0}; byMonth.set(key,g); groups.push(g); }
+    g.rows.push(r);
+    if (r.type==='topup') g.credit += Number(r.obj.amount)||0;
+    else if (r.type==='expense') g.debit += Number(r.obj.total)||0;
+    else g.debit += Number(r.obj.amount)||0;
+  });
+
+  // only the current month starts open (newest month if there is nothing this month yet)
+  if (!histOpenMonths){
+    const cur = thisMonth();
+    histOpenMonths = new Set([byMonth.has(cur) ? cur : groups[0].key]);
+  }
+
+  box.innerHTML = groups.map(g=>{
+    const open = histOpenMonths.has(g.key);
+    const totals = [
+      g.credit ? `<span class="mt-credit">+${fmt(g.credit)}</span>` : '',
+      g.debit ? `<span class="mt-debit">−${fmt(g.debit)}</span>` : ''
+    ].join('');
+    return `<section class="month-group${open?' open':''}">
+      <button class="month-head" data-month-toggle="${g.key}" aria-expanded="${open}" aria-controls="hist-${g.key}">
+        <span class="month-chev" aria-hidden="true">${chevSVG}</span>
+        <span class="mh-main"><span class="month-name">${monthLabel(g.key)}</span>
+          <span class="month-count">${g.rows.length} ${g.rows.length===1?'entry':'entries'}</span></span>
+        <span class="month-totals">${totals}</span>
+      </button>
+      <div class="month-body${open?'':' hidden'}" id="hist-${g.key}">${g.rows.map(historyRowHtml).join('')}</div>
+    </section>`;
   }).join('');
 }
 const trashSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>';
+const chevSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>';
 
 function renderItemEditor(){
   $('#itemEditor').innerHTML = Store.data.commonItems.map((n,i)=>
@@ -1640,6 +1699,13 @@ $('#view-money').addEventListener('click',(e)=>{
       if (type==='expense') await opDeleteExpense(id); else await opDeleteAdvance(id);
       renderAll();
     });
+    return;
+  }
+  const mt = e.target.closest('[data-month-toggle]');
+  if (mt){
+    const key = mt.dataset.monthToggle;
+    if (histOpenMonths.has(key)) histOpenMonths.delete(key); else histOpenMonths.add(key);
+    renderHistory();
     return;
   }
   const b = e.target.closest('[data-filter]'); if(!b) return;
