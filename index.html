@@ -1527,7 +1527,8 @@ function renderHistory(){
   const box = $('#historyList');
   if (!rows.length){ box.innerHTML='<div class="empty">Nothing here yet.</div>'; return; }
 
-  // newest month first — advances count as credit, shopping & salary as debit
+  // newest month first — advances count as credit, shopping as debit.
+  // Salary is paid straight to the cook, not out of the kitty, so it stays out of both totals.
   const groups = [], byMonth = new Map();
   rows.forEach(r=>{
     const key = String(r.date).slice(0,7);
@@ -1536,7 +1537,6 @@ function renderHistory(){
     g.rows.push(r);
     if (r.type==='topup') g.credit += Number(r.obj.amount)||0;
     else if (r.type==='expense') g.debit += Number(r.obj.total)||0;
-    else g.debit += Number(r.obj.amount)||0;
   });
 
   // only the current month starts open (newest month if there is nothing this month yet)
