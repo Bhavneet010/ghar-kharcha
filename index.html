@@ -820,6 +820,7 @@
           <div class="seg" id="transferFrom"></div>
           <label>To</label>
           <div class="seg" id="transferTo"></div>
+          <div id="transferPreview" class="banner info" style="margin-top:10px"></div>
         </div>
         <label>Date</label>
         <input type="date" id="topDate" />
@@ -1513,27 +1514,38 @@ const segPicked = {};
 function renderPaidBySegs(){
   Object.entries(SEG_DEFAULT_IDX).forEach(([sel,defaultIdx])=>{
     const box = $(sel); if(!box) return;
-    box.innerHTML='';
     const list = payers();
     if (!list.some(p=>p.id===segPicked[sel])){
       const fallback = list[Math.min(defaultIdx, Math.max(0, list.length-1))];
       segPicked[sel] = fallback ? fallback.id : null;
     }
-    list.forEach(p=>{
-      const b = document.createElement('button');
-      b.className = 'pill'+(p.id===segPicked[sel]?' active':''); b.textContent = p.name; b.dataset.id = p.id;
-      b.onclick = ()=>{
-        setSegActive(sel,p.id);
-        if (sel!=='#topPaidBy') keepTransferSidesDistinct(sel);
-      };
-      box.appendChild(b);
-    });
+    // Rebuild the buttons only when the people themselves changed. A cloud
+    // refresh re-renders every few seconds, and replacing a button under the
+    // user's finger swallows the tap in progress — the pointerdown lands on an
+    // element that no longer exists by the time the finger lifts, so no click
+    // ever fires and the pick appears to revert to the default person.
+    const signature = list.map(p=>p.id+'\u0000'+p.name).join('|');
+    if (box.dataset.people !== signature){
+      box.dataset.people = signature;
+      box.innerHTML='';
+      list.forEach(p=>{
+        const b = document.createElement('button');
+        b.className = 'pill'; b.textContent = p.name; b.dataset.id = p.id;
+        b.onclick = ()=>{
+          setSegActive(sel,p.id);
+          if (sel!=='#topPaidBy') keepTransferSidesDistinct(sel);
+        };
+        box.appendChild(b);
+      });
+    }
+    $$('.pill',box).forEach(x=>x.classList.toggle('active', x.dataset.id===segPicked[sel]));
   });
 }
 function setSegActive(sel,id){
   segPicked[sel] = id;
-  const box = $(sel); if(!box) return;
-  $$('.pill',box).forEach(x=>x.classList.toggle('active', x.dataset.id===id));
+  const box = $(sel);
+  if (box) $$('.pill',box).forEach(x=>x.classList.toggle('active', x.dataset.id===id));
+  renderTransferPreview();
 }
 function keepTransferSidesDistinct(changed){
   const from = pickedPayer('#transferFrom'), to = pickedPayer('#transferTo');
@@ -1550,7 +1562,19 @@ function renderMoneyMode(){
   $('#transferFields').classList.toggle('hidden', !isTransfer);
   $('#moneyCardTitle').textContent = isTransfer ? 'Give money to another person' : 'Give advance to cook';
   $('#saveTop').textContent = isTransfer ? 'Save payment' : 'Add advance';
+  renderTransferPreview();
 }
+// Spells out exactly what will be saved, so the direction is never a guess.
+function renderTransferPreview(){
+  const el = $('#transferPreview'); if (!el) return;
+  const from = personById(pickedPayer('#transferFrom')).name;
+  const to   = personById(pickedPayer('#transferTo')).name;
+  const amt  = Number($('#topAmt').value);
+  el.textContent = amt>0
+    ? `${from} gives ${fmt(amt)} to ${to}`
+    : `${from} gives money to ${to}`;
+}
+$('#topAmt').addEventListener('input', renderTransferPreview);
 $('#moneyMode').onclick = (e)=>{
   const b = e.target.closest('[data-money-mode]'); if(!b) return;
   moneyMode = b.dataset.moneyMode; renderMoneyMode();

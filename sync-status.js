@@ -15,7 +15,7 @@
   @keyframes syncpulse{0%,100%{opacity:1}50%{opacity:.35}}`;
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
-  var APP_VERSION = 'v75';
+  var APP_VERSION = 'v76';
   var updateReady = false, refreshing = false;
 
   function ensureBar(){
@@ -69,9 +69,20 @@
   // AND on any interaction/resume. diag lets the badge show if it's running.
   var diag = { ticks:0, lastTick:0, pulls:0, lastPull:0, skip:'', err:'' };
   var pulling = false;
+  // A refresh re-renders the screen. Doing that while a finger is down destroys
+  // the element being tapped, so the tap never becomes a click and the user's
+  // choice is silently dropped. Hold refreshes until the touch is over.
+  var pointerDown = false;
+  ['pointerdown','touchstart','mousedown'].forEach(function(ev){
+    window.addEventListener(ev, function(){ pointerDown = true; }, true);
+  });
+  ['pointerup','pointercancel','touchend','touchcancel','mouseup','blur'].forEach(function(ev){
+    window.addEventListener(ev, function(){ pointerDown = false; }, true);
+  });
   function cloudRefresh(){
     diag.ticks++; diag.lastTick = Date.now();
     if (document.hidden){ diag.skip='hidden'; return; }
+    if (pointerDown){ diag.skip='touch'; return; }
     if (hasUnsavedInput()){ diag.skip='typing'; return; }
     if (window.appBusy){ diag.skip='saving'; return; }
     if (window.cloudSyncState && (window.cloudSyncState.status==='loading'||window.cloudSyncState.status==='syncing')){
@@ -95,9 +106,11 @@
   function kick(e){
     if (e && e.target && e.target.closest &&
         e.target.closest('#saveShop,#saveTop,#saveSal,[data-del],[data-retry-cloud]')) return;
+    if (pointerDown) return;
     var n=Date.now(); if (n-lastKick<2500) return; lastKick=n; cloudRefresh();
   }
-  ['pointerdown','touchstart','click'].forEach(function(ev){ window.addEventListener(ev, kick, true); });
+  // Fires once the touch has finished, never while it is still in progress.
+  ['pointerup','touchend','click'].forEach(function(ev){ window.addEventListener(ev, kick, true); });
   document.addEventListener('visibilitychange', function(){ if(!document.hidden) cloudRefresh(); });
   window.addEventListener('focus', cloudRefresh);
   window.addEventListener('online', cloudRefresh);
