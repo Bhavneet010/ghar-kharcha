@@ -804,11 +804,23 @@
       </div>
 
       <div class="card">
-        <h3>Give advance to cook</h3>
+        <h3 id="moneyCardTitle">Give advance to cook</h3>
+        <div class="seg" id="moneyMode" style="margin-bottom:10px">
+          <button class="pill active" data-money-mode="advance">Advance to cook</button>
+          <button class="pill" data-money-mode="transfer">Give to a person</button>
+        </div>
         <label>Amount</label>
         <input type="number" id="topAmt" inputmode="numeric" placeholder="e.g. 5000" />
-        <label>Paid by</label>
-        <div class="seg" id="topPaidBy"></div>
+        <div id="advanceFields">
+          <label>Paid by</label>
+          <div class="seg" id="topPaidBy"></div>
+        </div>
+        <div id="transferFields" class="hidden">
+          <label>From</label>
+          <div class="seg" id="transferFrom"></div>
+          <label>To</label>
+          <div class="seg" id="transferTo"></div>
+        </div>
         <label>Date</label>
         <input type="date" id="topDate" />
         <button class="btn" id="saveTop">Add advance</button>
@@ -820,6 +832,7 @@
           <button class="pill active" data-filter="all">All</button>
           <button class="pill" data-filter="expense">Shopping</button>
           <button class="pill" data-filter="topup">Advances</button>
+          <button class="pill" data-filter="transfer">Transfers</button>
           <button class="pill" data-filter="salary">Salary</button>
         </div>
         <div id="historyList"></div>
@@ -917,7 +930,7 @@ const DEFAULT_DATA = {
     { id: 'r', name: 'Ritika',   role: 'payer' },
     { id: 'c', name: 'Cook',     role: 'cook'  }
   ],
-  topups: [], expenses: [], salaries: [],
+  topups: [], expenses: [], salaries: [], transfers: [],
   commonItems: ['Milk','Bread','Eggs','Atta','Rice','Dal','Onion','Tomato','Potato',
     'Mixed vegetables','Curd','Paneer','Cooking oil','Sugar','Tea','Salt',
     'Green chilli','Ginger-garlic','Coriander','Fruits','Chicken','Spices','Ghee'],
@@ -981,16 +994,20 @@ async function cloudFetchAll(operation='Refreshing cloud data'){
   const startedEpoch = cloudMutationEpoch;
   const readLimit = ++cloudReadNonce;
   setCloudStatus('syncing',operation);
-  const [adv, exp, sal, cfg] = await withTimeout(Promise.all([
+  const [adv, exp, sal, trf, cfg] = await withTimeout(Promise.all([
     sb.from('advances').select('*').limit(readLimit),
     sb.from('expenses').select('*').limit(readLimit),
     sb.from('salaries').select('*').limit(readLimit),
+    sb.from('transfers').select('*').limit(readLimit),
     sb.from('app_config').select('*').eq('id',1).limit(readLimit).maybeSingle()
   ]));
   if (adv.error||exp.error||sal.error||cfg.error) throw (adv.error||exp.error||sal.error||cfg.error);
+  // A missing transfers table (older database) must not block the rest of the app.
+  if (trf.error) console.warn('Could not load transfers', trf.error);
   const next = structuredClone(DEFAULT_DATA);
   next.topups = (adv.data||[]).map(r=>({id:r.id,date:r.date,amount:Number(r.amount),paidBy:r.paid_by,note:r.note||''}));
   next.expenses = (exp.data||[]).map(r=>({id:r.id,date:r.date,items:r.items||[],total:Number(r.total),loggedBy:r.logged_by,note:r.note||''}));
+  next.transfers = (trf.data||[]).map(r=>({id:r.id,date:r.date,amount:Number(r.amount),from:r.from_user,to:r.to_user,note:r.note||''}));
   next.salaries = [];
   (sal.data||[]).forEach(r=>{
     if (r.month===SALARY_CONFIG_MONTH){
@@ -1053,6 +1070,10 @@ async function performCloudOp(op){
     res = await withTimeout(sb.from('advances').upsert({
       id:op.id, date:o.date, amount:o.amount, paid_by:o.paidBy, note:o.note||''
     }, { onConflict:'id' }).select('*').single());
+  } else if (op.type==='transfer'){ const o=op.payload;
+    res = await withTimeout(sb.from('transfers').upsert({
+      id:op.id, date:o.date, amount:o.amount, from_user:o.from, to_user:o.to, note:o.note||''
+    }, { onConflict:'id' }).select('*').single());
   } else if (op.type==='expense'){ const o=op.payload;
     res = await withTimeout(sb.from('expenses').upsert({
       id:op.id, date:o.date, items:o.items, total:o.total, logged_by:o.loggedBy, note:o.note||''
@@ -1086,6 +1107,9 @@ function applyCloudConfirmation(op, data){
   if (op.type==='advance'){
     const row = {id:data.id,date:data.date,amount:Number(data.amount),paidBy:data.paid_by,note:data.note||''};
     Store.data.topups = Store.data.topups.filter(r=>r.id!==row.id).concat(row);
+  } else if (op.type==='transfer'){
+    const row = {id:data.id,date:data.date,amount:Number(data.amount),from:data.from_user,to:data.to_user,note:data.note||''};
+    Store.data.transfers = Store.data.transfers.filter(r=>r.id!==row.id).concat(row);
   } else if (op.type==='expense'){
     const row = {id:data.id,date:data.date,items:data.items||[],total:Number(data.total),loggedBy:data.logged_by,note:data.note||''};
     Store.data.expenses = Store.data.expenses.filter(r=>r.id!==row.id).concat(row);
@@ -1105,6 +1129,7 @@ function applyCloudConfirmation(op, data){
     const ids = new Set((data||[]).map(r=>r.id).concat(op.id));
     if (op.table==='advances') Store.data.topups=Store.data.topups.filter(r=>!ids.has(r.id));
     if (op.table==='expenses') Store.data.expenses=Store.data.expenses.filter(r=>!ids.has(r.id));
+    if (op.table==='transfers') Store.data.transfers=Store.data.transfers.filter(r=>!ids.has(r.id));
   }
 }
 function applyRealtimeChange(payload){
@@ -1114,6 +1139,8 @@ function applyRealtimeChange(payload){
     applyCloudConfirmation({type:'delete',table:payload.table,id:row.id},[row]);
   } else if (payload.table==='advances'){
     applyCloudConfirmation({type:'advance'},row);
+  } else if (payload.table==='transfers'){
+    applyCloudConfirmation({type:'transfer'},row);
   } else if (payload.table==='expenses'){
     applyCloudConfirmation({type:'expense'},row);
   } else if (payload.table==='salaries'){
@@ -1163,6 +1190,12 @@ async function opAddExpense(o){
 }
 async function opAddAdvance(o){
   await cloudMutate('Saving advance',{ type:'advance', payload:o, id:syncId() });
+}
+async function opAddTransfer(o){
+  await cloudMutate('Saving payment',{ type:'transfer', payload:o, id:syncId() });
+}
+async function opDeleteTransfer(id){
+  await cloudMutate('Deleting payment',{ type:'delete', table:'transfers', id });
 }
 async function opDeleteAdvance(id){
   await cloudMutate('Deleting advance',{ type:'delete', table:'advances', id });
@@ -1241,6 +1274,22 @@ function contributions(){
   Store.data.topups.forEach(t=>{ if(t.paidBy in map) map[t.paidBy]+=Number(t.amount); });
   return map;
 }
+// A person-to-person payment settles part of what one owes the other: the giver
+// has effectively put in that much more, the receiver that much less.
+function transferTotals(){
+  const map = {}; payers().forEach(p=>map[p.id]=0);
+  Store.data.transfers.forEach(t=>{
+    const amt = Number(t.amount)||0;
+    if (t.from in map) map[t.from] += amt;
+    if (t.to   in map) map[t.to]   -= amt;
+  });
+  return map;
+}
+function netContributions(){
+  const c = contributions(), t = transferTotals(), map = {};
+  payers().forEach(p=>map[p.id] = (c[p.id]||0) + (t[p.id]||0));
+  return map;
+}
 function monthTotals(m=thisMonth()){
   const groc = Store.data.expenses.filter(e=>e.date.slice(0,7)===m).reduce((s,e)=>s+Number(e.total),0);
   const sal  = Store.data.salaries.filter(s=>s.month===m).reduce((s,x)=>s+Number(x.amount),0);
@@ -1249,7 +1298,8 @@ function monthTotals(m=thisMonth()){
 
 function renderAll(){
   renderHome(); renderQuickChips(); renderItemEditor(); renderPeople();
-  renderSalList(); renderHistory(); renderPaidBySegs(); renderSyncGlow(); renderSalaryReminder();
+  renderSalList(); renderHistory(); renderPaidBySegs(); renderMoneyMode();
+  renderSyncGlow(); renderSalaryReminder();
   $('#setThreshold').value = Store.data.settings.lowBalanceThreshold;
   $('#setSalaryAmount').value = Store.data.settings.monthlySalaryAmount;
   const p = personById(currentUser);
@@ -1293,19 +1343,26 @@ function renderHome(){
     else if (bal < thr*2) slot.innerHTML = banner('warn','Running low soon', `${fmt(bal)} left. You may want to give an advance shortly.`);
   }
 
-  const c = contributions(); const ps = payers(); let html = '';
-  ps.forEach(p=>{ html += `<div class="list-item"><span class="${personClass(p.id)}">●</span> ${p.name}
-    <span class="amt">${fmt(c[p.id]||0)}</span></div>`; });
+  const c = contributions(), tr = transferTotals(), net = netContributions();
+  const ps = payers(); let html = '';
+  ps.forEach(p=>{
+    const adj = tr[p.id]||0;
+    const sub = adj
+      ? `<div class="muted small">advances ${fmt(c[p.id]||0)} · ${adj>0?'given':'received'} ${fmt(Math.abs(adj))}</div>`
+      : '';
+    html += `<div class="list-item"><div><span class="${personClass(p.id)}">●</span> ${p.name}${sub}</div>
+      <span class="amt">${fmt(net[p.id]||0)}</span></div>`;
+  });
   if (ps.length===2){
-    const [a,b] = ps; const diff = (c[a.id]||0) - (c[b.id]||0);
+    const [a,b] = ps; const diff = (net[a.id]||0) - (net[b.id]||0);
     if (Math.abs(diff) < 1){
       html += `<div class="banner info" style="margin-top:12px">All square 🎉 You've both paid the same so far.</div>`;
     } else {
       const behind = diff>0 ? b : a, ahead = diff>0 ? a : b, gap = Math.abs(diff);
       html += `<div class="banner info" style="margin-top:12px">
-        <b class="${personClass(behind.id)}">${behind.name}</b>&nbsp;should pay next —
-        ${fmt(gap/2)} to ${ahead.name} would make you even
-        (or just cover the next ${fmt(gap)} of advance/salary).</div>`;
+        <b class="${personClass(behind.id)}">${behind.name}</b>&nbsp;owes
+        <b class="${personClass(ahead.id)}">${ahead.name}</b>&nbsp;${fmt(gap/2)} —
+        give that to settle up (or just cover the next ${fmt(gap)} of advance/salary).</div>`;
     }
   }
   $('#ledgerBox').innerHTML = html;
@@ -1448,16 +1505,47 @@ function renderItemLines(){
 function updateShopTotal(){ $('#shopTotal').textContent = fmt(shopItems.reduce((s,i)=>s+(Number(i.amount)||0),0)); }
 
 function renderPaidBySegs(){
-  ['#topPaidBy'].forEach(sel=>{
-    const box = $(sel); box.innerHTML='';
-    payers().forEach((p,i)=>{
+  // 'To' starts on the second payer so a transfer defaults to two different people
+  [['#topPaidBy',0],['#transferFrom',0],['#transferTo',1]].forEach(([sel,defaultIdx])=>{
+    const box = $(sel); if(!box) return;
+    box.innerHTML='';
+    const list = payers();
+    const activeIdx = Math.min(defaultIdx, Math.max(0, list.length-1));
+    list.forEach((p,i)=>{
       const b = document.createElement('button');
-      b.className = 'pill'+(i===0?' active':''); b.textContent = p.name; b.dataset.id = p.id;
-      b.onclick = ()=>{ $$('.pill',box).forEach(x=>x.classList.remove('active')); b.classList.add('active'); };
+      b.className = 'pill'+(i===activeIdx?' active':''); b.textContent = p.name; b.dataset.id = p.id;
+      b.onclick = ()=>{
+        $$('.pill',box).forEach(x=>x.classList.remove('active')); b.classList.add('active');
+        if (sel!=='#topPaidBy') keepTransferSidesDistinct(sel);
+      };
       box.appendChild(b);
     });
   });
 }
+function setSegActive(sel,id){
+  const box = $(sel); if(!box) return;
+  $$('.pill',box).forEach(x=>x.classList.toggle('active', x.dataset.id===id));
+}
+function keepTransferSidesDistinct(changed){
+  const from = pickedPayer('#transferFrom'), to = pickedPayer('#transferTo');
+  if (from!==to) return;
+  const other = payers().find(p=>p.id!==from); if (!other) return;
+  setSegActive(changed==='#transferFrom' ? '#transferTo' : '#transferFrom', other.id);
+}
+let moneyMode = 'advance';
+function renderMoneyMode(){
+  $$('#moneyMode [data-money-mode]').forEach(b=>
+    b.classList.toggle('active', b.dataset.moneyMode===moneyMode));
+  const isTransfer = moneyMode==='transfer';
+  $('#advanceFields').classList.toggle('hidden', isTransfer);
+  $('#transferFields').classList.toggle('hidden', !isTransfer);
+  $('#moneyCardTitle').textContent = isTransfer ? 'Give money to another person' : 'Give advance to cook';
+  $('#saveTop').textContent = isTransfer ? 'Save payment' : 'Add advance';
+}
+$('#moneyMode').onclick = (e)=>{
+  const b = e.target.closest('[data-money-mode]'); if(!b) return;
+  moneyMode = b.dataset.moneyMode; renderMoneyMode();
+};
 function pickedPayer(sel){ const a=$(sel+' .pill.active'); return a?a.dataset.id:payers()[0].id; }
 function renderSalList(){
   const month = thisMonth();
@@ -1508,13 +1596,16 @@ let histOpenMonths = null; // Set of 'YYYY-MM' groups that are expanded; null un
 function historyRowHtml(r){
   let row;
   if (r.type==='expense') row = expenseRow(r.obj);
+  else if (r.type==='transfer') row = `<div class="list-item"><div><span class="tag">Transfer</span>
+      ${prettyDate(r.obj.date)} <div class="muted small">${escapeHtml(personById(r.obj.from).name)} → ${escapeHtml(personById(r.obj.to).name)}${r.obj.note?' · '+escapeHtml(r.obj.note):''}</div></div>
+      <span class="amt">${fmt(r.obj.amount)}</span></div>`;
   else if (r.type==='topup') row = `<div class="list-item"><div><span class="tag">Advance</span>
       ${prettyDate(r.obj.date)} <div class="muted small">paid by ${personById(r.obj.paidBy).name}${r.obj.note?' · '+r.obj.note:''}</div></div>
       <span class="amt" style="color:var(--accent)">+${fmt(r.obj.amount)}</span></div>`;
   else return `<div class="list-item"><div><span class="tag">Salary</span> ${monthLabel(r.obj.month)}
       <div class="muted small">paid by ${personById(r.obj.paidBy).name}</div></div>
       <span class="amt">${fmt(r.obj.amount)}</span></div>`;
-  // expenses & advances can be removed if added by mistake
+  // expenses, advances & transfers can be removed if added by mistake
   const del = `<button class="row-del" data-del="${r.type}" data-id="${r.obj.id}" title="Delete" aria-label="Delete">${trashSVG}</button>`;
   return row.replace(/<\/div>\s*$/, del+'</div>');
 }
@@ -1522,13 +1613,15 @@ function renderHistory(){
   let rows = [];
   Store.data.expenses.forEach(e=>rows.push({type:'expense',date:e.date,obj:e}));
   Store.data.topups.forEach(t=>rows.push({type:'topup',date:t.date,obj:t}));
+  Store.data.transfers.forEach(t=>rows.push({type:'transfer',date:t.date,obj:t}));
   Store.data.salaries.forEach(s=>rows.push({type:'salary',date:salaryBaseMonth(s.month)+'-01',obj:s}));
   rows = rows.filter(r=>histFilter==='all'||r.type===histFilter).sort((a,b)=>(b.date+'').localeCompare(a.date+''));
   const box = $('#historyList');
   if (!rows.length){ box.innerHTML='<div class="empty">Nothing here yet.</div>'; return; }
 
   // newest month first — advances count as credit, shopping as debit.
-  // Salary is paid straight to the cook, not out of the kitty, so it stays out of both totals.
+  // Salary is paid straight to the cook, and a person-to-person transfer only moves
+  // money between payers, so neither belongs in the kitty's credit/debit totals.
   const groups = [], byMonth = new Map();
   rows.forEach(r=>{
     const key = String(r.date).slice(0,7);
@@ -1686,7 +1779,14 @@ $('#saveShop').onclick = ()=> runOp(async ()=>{
 $('#saveTop').onclick = ()=> runOp(async ()=>{
   const amt = Number($('#topAmt').value);
   if (!(amt>0)){ alert('Enter an amount.'); return; }
-  await opAddAdvance({ date:$('#topDate').value||today(), amount:amt, paidBy:pickedPayer('#topPaidBy'), note:'' });
+  const date = $('#topDate').value||today();
+  if (moneyMode==='transfer'){
+    const from = pickedPayer('#transferFrom'), to = pickedPayer('#transferTo');
+    if (from===to){ alert('Pick two different people.'); return; }
+    await opAddTransfer({ date, amount:amt, from, to, note:'' });
+  } else {
+    await opAddAdvance({ date, amount:amt, paidBy:pickedPayer('#topPaidBy'), note:'' });
+  }
   $('#topAmt').value=''; renderAll(); goHome();
 });
 
@@ -1694,9 +1794,12 @@ $('#view-money').addEventListener('click',(e)=>{
   const del = e.target.closest('[data-del]');
   if (del){
     const type = del.dataset.del, id = del.dataset.id;
-    if (!confirm(type==='expense' ? 'Delete this shopping entry? This cannot be undone.' : 'Delete this advance? This cannot be undone.')) return;
+    const what = type==='expense' ? 'shopping entry' : type==='transfer' ? 'payment' : 'advance';
+    if (!confirm(`Delete this ${what}? This cannot be undone.`)) return;
     runOp(async ()=>{
-      if (type==='expense') await opDeleteExpense(id); else await opDeleteAdvance(id);
+      if (type==='expense') await opDeleteExpense(id);
+      else if (type==='transfer') await opDeleteTransfer(id);
+      else await opDeleteAdvance(id);
       renderAll();
     });
     return;

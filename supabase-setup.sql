@@ -26,6 +26,17 @@ create table if not exists expenses (
   created_at  timestamptz default now()
 );
 
+-- money one payer hands directly to another payer (settling up)
+create table if not exists transfers (
+  id          uuid primary key default gen_random_uuid(),
+  date        date not null,
+  amount      numeric not null,
+  from_user   text not null,          -- payer giving the money
+  to_user     text not null,          -- payer receiving it
+  note        text default '',
+  created_at  timestamptz default now()
+);
+
 create table if not exists salaries (
   id        uuid primary key default gen_random_uuid(),
   month     text unique not null,     -- 'YYYY-MM:userId'; legacy 'YYYY-MM' rows still work
@@ -55,19 +66,22 @@ on conflict (month) do nothing;
 
 -- ---------- Access for the app's anon key ----------
 grant usage on schema public to anon, authenticated;
-grant all on advances, expenses, salaries, app_config to anon, authenticated;
+grant all on advances, expenses, transfers, salaries, app_config to anon, authenticated;
 
 alter table advances   enable row level security;
+alter table transfers  enable row level security;
 alter table expenses   enable row level security;
 alter table salaries   enable row level security;
 alter table app_config enable row level security;
 
 drop policy if exists "app access advances"   on advances;
+drop policy if exists "app access transfers"  on transfers;
 drop policy if exists "app access expenses"    on expenses;
 drop policy if exists "app access salaries"    on salaries;
 drop policy if exists "app access app_config"  on app_config;
 
 create policy "app access advances"   on advances   for all using (true) with check (true);
+create policy "app access transfers"  on transfers  for all using (true) with check (true);
 create policy "app access expenses"   on expenses   for all using (true) with check (true);
 create policy "app access salaries"   on salaries   for all using (true) with check (true);
 create policy "app access app_config" on app_config for all using (true) with check (true);
@@ -77,8 +91,9 @@ do $$
 begin
   begin execute 'alter publication supabase_realtime add table advances';   exception when duplicate_object then null; end;
   begin execute 'alter publication supabase_realtime add table expenses';   exception when duplicate_object then null; end;
+  begin execute 'alter publication supabase_realtime add table transfers';  exception when duplicate_object then null; end;
   begin execute 'alter publication supabase_realtime add table salaries';   exception when duplicate_object then null; end;
   begin execute 'alter publication supabase_realtime add table app_config'; exception when duplicate_object then null; end;
 end $$;
 
--- Done. You should see four tables under Table Editor.
+-- Done. You should see five tables under Table Editor.
