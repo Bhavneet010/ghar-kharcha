@@ -1504,18 +1504,26 @@ function renderItemLines(){
 }
 function updateShopTotal(){ $('#shopTotal').textContent = fmt(shopItems.reduce((s,i)=>s+(Number(i.amount)||0),0)); }
 
+// Who is picked in each payer segment. Kept outside the DOM because a cloud
+// refresh re-renders these buttons at any moment, and rebuilding them must not
+// silently throw away the person the user just chose.
+// 'To' starts on the second payer so a transfer defaults to two different people.
+const SEG_DEFAULT_IDX = { '#topPaidBy':0, '#transferFrom':0, '#transferTo':1 };
+const segPicked = {};
 function renderPaidBySegs(){
-  // 'To' starts on the second payer so a transfer defaults to two different people
-  [['#topPaidBy',0],['#transferFrom',0],['#transferTo',1]].forEach(([sel,defaultIdx])=>{
+  Object.entries(SEG_DEFAULT_IDX).forEach(([sel,defaultIdx])=>{
     const box = $(sel); if(!box) return;
     box.innerHTML='';
     const list = payers();
-    const activeIdx = Math.min(defaultIdx, Math.max(0, list.length-1));
-    list.forEach((p,i)=>{
+    if (!list.some(p=>p.id===segPicked[sel])){
+      const fallback = list[Math.min(defaultIdx, Math.max(0, list.length-1))];
+      segPicked[sel] = fallback ? fallback.id : null;
+    }
+    list.forEach(p=>{
       const b = document.createElement('button');
-      b.className = 'pill'+(i===activeIdx?' active':''); b.textContent = p.name; b.dataset.id = p.id;
+      b.className = 'pill'+(p.id===segPicked[sel]?' active':''); b.textContent = p.name; b.dataset.id = p.id;
       b.onclick = ()=>{
-        $$('.pill',box).forEach(x=>x.classList.remove('active')); b.classList.add('active');
+        setSegActive(sel,p.id);
         if (sel!=='#topPaidBy') keepTransferSidesDistinct(sel);
       };
       box.appendChild(b);
@@ -1523,6 +1531,7 @@ function renderPaidBySegs(){
   });
 }
 function setSegActive(sel,id){
+  segPicked[sel] = id;
   const box = $(sel); if(!box) return;
   $$('.pill',box).forEach(x=>x.classList.toggle('active', x.dataset.id===id));
 }
@@ -1546,7 +1555,10 @@ $('#moneyMode').onclick = (e)=>{
   const b = e.target.closest('[data-money-mode]'); if(!b) return;
   moneyMode = b.dataset.moneyMode; renderMoneyMode();
 };
-function pickedPayer(sel){ const a=$(sel+' .pill.active'); return a?a.dataset.id:payers()[0].id; }
+function pickedPayer(sel){
+  if (payers().some(p=>p.id===segPicked[sel])) return segPicked[sel];
+  const a=$(sel+' .pill.active'); return a?a.dataset.id:payers()[0].id;
+}
 function renderSalList(){
   const month = thisMonth();
   $('#salList').innerHTML = payers().map(p=>{
