@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f7f5ef" />
+<script>(function(){try{var t=localStorage.getItem('ghk_theme')||((window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)?'dark':'light');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','light');}})();</script>
+<link rel="apple-touch-icon" href="icon.svg" />
+<link rel="icon" href="icon.svg" />
+<title>Quick Expense — Ghar Kharcha</title>
+<style>
+  :root{
+    --bg:#f7f5ef; --surface:#ffffff; --inset:#f3f1ea;
+    --text:#1b2330; --muted:#69737f; --line:#e7e4da;
+    --accent:#1f8a4f; --accent-ink:#ffffff;
+    --danger:#d8534a; --danger-bg:#fdecea; --info-bg:#e8f4ec;
+    --shadow:0 1px 2px rgba(16,24,40,.04),0 10px 28px rgba(16,24,40,.05);
+  }
+  [data-theme="dark"]{
+    --bg:#0f141b; --surface:#161d27; --inset:#1c2530;
+    --text:#e7ecf2; --muted:#8c98a6; --line:rgba(255,255,255,.08);
+    --accent:#2dd4a7; --accent-ink:#06231a;
+    --danger:#ff7174; --danger-bg:rgba(255,113,116,.14); --info-bg:rgba(45,212,167,.14);
+    --shadow:none;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html{background:var(--bg)}
+  body{margin:0 auto;padding:16px;max-width:480px;min-height:100vh;color:var(--text);background:var(--bg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;line-height:1.45}
+  header{display:flex;align-items:center;gap:8px;margin:4px 0 16px}
+  .logo{width:31px;height:31px;border-radius:9px;background:var(--accent);color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  header b{font-size:18px;letter-spacing:-.3px}
+  header a{margin-left:auto;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:var(--shadow)}
+  label{display:block;font-size:13px;color:var(--muted);margin:18px 0 7px}
+  label:first-child{margin-top:0}
+  input{width:100%;padding:14px;background:var(--inset);border:1px solid transparent;color:var(--text);
+    border-radius:13px;font-size:16px;font-family:inherit}
+  input::placeholder{color:var(--muted);opacity:.7}
+  input:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+  .seg{display:flex;flex-wrap:wrap;gap:8px}
+  .pill{background:var(--inset);border:none;border-radius:999px;padding:10px 16px;font-size:15px;
+    color:var(--text);cursor:pointer;font-family:inherit}
+  .pill.active{background:var(--accent);color:var(--accent-ink);font-weight:600}
+  .btn{display:block;width:100%;padding:16px;border:none;border-radius:14px;font-size:16px;font-weight:600;
+    margin-top:22px;background:var(--accent);color:var(--accent-ink);cursor:pointer;font-family:inherit}
+  .btn:disabled{opacity:.5}
+  .msg{display:none;margin-top:14px;border-radius:12px;padding:12px 14px;font-size:14px}
+  .msg.show{display:block}
+  .msg.ok{background:var(--info-bg);color:var(--accent)}
+  .msg.err{background:var(--danger-bg);color:var(--danger)}
+  .muted{color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">₹</span>
+  <b>Quick expense</b>
+  <a href="./">Open full app</a>
+</header>
+
+<form class="card" id="form" autocomplete="off">
+  <label>Expense done by</label>
+  <div class="seg" id="who"><span class="muted">Loading…</span></div>
+
+  <label for="item">Expense item</label>
+  <input id="item" list="itemList" placeholder="e.g. Milk" required />
+  <datalist id="itemList"></datalist>
+
+  <label for="amount">Amount (₹)</label>
+  <input id="amount" type="number" inputmode="decimal" min="1" step="any" placeholder="0" required />
+
+  <button class="btn" id="save" type="submit">Add expense</button>
+  <div class="msg" id="msg" role="status" aria-live="polite"></div>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL  = 'https://xebnciawqwscifzgrkbu.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_pYlpW2Ixjz722lj0acz0Dg_KQz7RVLd';
+const DEFAULT_PEOPLE = [
+  { id:'b', name:'Bhavneet', role:'payer' },
+  { id:'r', name:'Ritika',   role:'payer' },
+  { id:'c', name:'Cook',     role:'cook'  }
+];
+const WHO_KEY = 'ghk_quick_who';
+const $ = s => document.querySelector(s);
+const esc = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today = () => new Date().toISOString().slice(0,10);
+const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON) : null;
+let people = DEFAULT_PEOPLE;
+let picked = null;
+try{ picked = localStorage.getItem(WHO_KEY) || localStorage.getItem('ghk_user'); }catch(e){}
+
+function withTimeout(p, ms=12000){
+  return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error('Request timed out')),ms))]);
+}
+function showMsg(type, text){
+  const m = $('#msg'); m.className = 'msg show ' + type; m.textContent = text;
+}
+function renderWho(){
+  if (!people.some(p=>p.id===picked)) picked = people[0] && people[0].id;
+  $('#who').innerHTML = people.map(p=>
+    `<button type="button" class="pill${p.id===picked?' active':''}" data-id="${esc(p.id)}">${esc(p.name)}</button>`).join('');
+}
+$('#who').onclick = e=>{
+  const b = e.target.closest('[data-id]'); if (!b) return;
+  picked = b.dataset.id;
+  try{ localStorage.setItem(WHO_KEY, picked); }catch(err){}
+  renderWho();
+};
+
+async function loadConfig(){
+  if (!sb){ showMsg('err','Could not load the cloud library. Check your internet.'); renderWho(); return; }
+  try{
+    const { data, error } = await withTimeout(sb.from('app_config').select('people,common_items').eq('id',1).maybeSingle());
+    if (error) throw error;
+    if (data && data.people && data.people.length) people = data.people;
+    if (data && data.common_items) $('#itemList').innerHTML = data.common_items.map(i=>`<option value="${esc(i)}"></option>`).join('');
+  }catch(e){ showMsg('err','Could not load people from the cloud: ' + (e.message||e)); }
+  renderWho();
+}
+
+$('#form').onsubmit = async e=>{
+  e.preventDefault();
+  const name = $('#item').value.trim();
+  const amount = Number($('#amount').value);
+  if (!picked){ showMsg('err','Pick who did the expense.'); return; }
+  if (!name){ showMsg('err','Enter the expense item.'); return; }
+  if (!(amount > 0)){ showMsg('err','Enter an amount greater than 0.'); return; }
+  if (!sb){ showMsg('err','Not connected to the cloud. Expense was not saved.'); return; }
+  const btn = $('#save'); btn.disabled = true; btn.textContent = 'Saving…';
+  try{
+    const { data, error } = await withTimeout(sb.from('expenses').insert({
+      date: today(), items: [{ name, amount }], total: amount, logged_by: picked, note: ''
+    }).select('id').single());
+    if (error) throw error;
+    if (!data) throw new Error('Cloud did not confirm the change');
+    const who = (people.find(p=>p.id===picked)||{}).name || picked;
+    showMsg('ok', `Saved: ${name} — ₹${amount.toLocaleString('en-IN')} by ${who}`);
+    $('#item').value = ''; $('#amount').value = ''; $('#item').focus();
+  }catch(err){
+    showMsg('err','Not saved: ' + (err.message||err));
+  }finally{
+    btn.disabled = false; btn.textContent = 'Add expense';
+  }
+};
+
+loadConfig();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>

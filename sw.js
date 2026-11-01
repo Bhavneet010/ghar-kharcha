@@ -1,10 +1,11 @@
 // Service worker — offline caching for the PWA.
 // Bump CACHE version whenever you change app files so clients update.
-const CACHE = 'ghar-kharcha-v78';
+const CACHE = 'ghar-kharcha-v79';
 const SYNC_STATUS_URL = './sync-status.js?v=' + CACHE;
 const ASSETS = [
   './',
   './index.html',
+  './quick-add.html',
   './manifest.webmanifest',
   './icon.svg',
   './icon-maskable.svg',
@@ -40,15 +41,18 @@ self.addEventListener('fetch', (e) => {
     return;
   }
   if (req.mode === 'navigate') {
+    // The simple expense page is its own document; everything else is the app shell.
+    const isQuick = url.pathname.endsWith('/quick-add.html');
+    const key = isQuick ? './quick-add.html' : './index.html';
     e.respondWith(
       fetch(req, { cache: 'no-store' }).then((res) =>
         res.text().then((html) => {
-          const body = injectSync(html);
+          const body = isQuick ? html : injectSync(html);
           const headers = { 'Content-Type': 'text/html; charset=utf-8' };
-          caches.open(CACHE).then((c) => c.put('./index.html', new Response(body, { headers })));
+          caches.open(CACHE).then((c) => c.put(key, new Response(body, { headers })));
           return new Response(body, { headers });
         })
-      ).catch(() => caches.match('./index.html'))
+      ).catch(() => caches.match(key))
     );
     return;
   }

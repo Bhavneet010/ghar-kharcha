@@ -852,6 +852,12 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         Home</button>
       <div class="card">
+        <h3>Simple expense add</h3>
+        <p class="muted small">A separate, simple page to log an expense with just three fields: who spent, the item, and the amount. Bookmark it or add it to your home screen.</p>
+        <a class="btn sec" href="quick-add.html" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">Open simple expense add</a>
+        <button class="btn sec" id="copyQuickAdd">Copy link</button>
+      </div>
+      <div class="card">
         <h3>Low-balance alert</h3>
         <label>Warn me when balance falls below</label>
         <input type="number" id="setThreshold" inputmode="numeric" />
@@ -1902,6 +1908,11 @@ $('#enableNotif').onclick = async ()=>{
 function notify(title,body){
   try{ if ('Notification' in window && Notification.permission==='granted') new Notification(title,{body, icon:'icon.svg'}); }catch(e){}
 }
+$('#copyQuickAdd').onclick = async ()=>{
+  const url = new URL('quick-add.html', location.href).href;
+  try{ await navigator.clipboard.writeText(url); alert('Link copied:\n'+url); }
+  catch(e){ prompt('Copy this link:', url); }
+};
 $('#exportData').onclick = ()=>{
   const blob = new Blob([JSON.stringify(Store.data,null,2)],{type:'application/json'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
