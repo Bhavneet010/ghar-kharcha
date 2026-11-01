@@ -53,6 +53,19 @@
   .msg.err{background:var(--danger-bg);color:var(--danger)}
   .muted{color:var(--muted);font-size:13px}
   .card + .card{margin-top:16px}
+  .card.qa{padding:10px}
+  .qa-row{display:flex;gap:6px;align-items:center}
+  .qa-row select,.qa-row input{min-width:0;padding:11px 9px;font-size:15px;border-radius:11px;
+    background:var(--inset);border:1px solid transparent;color:var(--text);font-family:inherit}
+  .qa-row select{flex:0 0 88px;appearance:none;-webkit-appearance:none;font-weight:600;color:var(--accent);
+    text-overflow:ellipsis}
+  .qa-row #item{flex:1 1 auto}
+  .qa-row #amount{flex:0 0 72px}
+  .qa-row select:focus{outline:none;border-color:var(--accent)}
+  .qa-row button{flex:0 0 44px;height:44px;border:none;border-radius:11px;background:var(--accent);
+    color:var(--accent-ink);font-size:24px;font-weight:600;line-height:1;cursor:pointer;padding:0}
+  .qa-row button:disabled{opacity:.5}
+  .qa .msg{margin-top:8px;padding:8px 10px;font-size:13px}
   .card h3{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600}
   .totals{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
   .totals span{background:var(--inset);border-radius:10px;padding:8px 12px;font-size:13px}
@@ -71,18 +84,14 @@
   <a href="./">Open full app</a>
 </header>
 
-<form class="card" id="form" autocomplete="off">
-  <label>Expense done by</label>
-  <div class="seg" id="who"><span class="muted">Loading…</span></div>
-
-  <label for="item">Expense item</label>
-  <input id="item" list="itemList" placeholder="e.g. Milk" required />
+<form class="card qa" id="form" autocomplete="off">
+  <div class="qa-row">
+    <select id="who" aria-label="Expense done by"><option>…</option></select>
+    <input id="item" list="itemList" placeholder="Item" aria-label="Expense item" required />
+    <input id="amount" type="number" inputmode="decimal" min="1" step="any" placeholder="₹" aria-label="Amount" required />
+    <button id="save" type="submit" aria-label="Add expense">+</button>
+  </div>
   <datalist id="itemList"></datalist>
-
-  <label for="amount">Amount (₹)</label>
-  <input id="amount" type="number" inputmode="decimal" min="1" step="any" placeholder="0" required />
-
-  <button class="btn" id="save" type="submit">Add expense</button>
   <div class="msg" id="msg" role="status" aria-live="polite"></div>
 </form>
 
@@ -124,13 +133,11 @@ function showMsg(type, text){
 function renderWho(){
   if (!people.some(p=>p.id===picked)) picked = people[0] && people[0].id;
   $('#who').innerHTML = people.map(p=>
-    `<button type="button" class="pill${p.id===picked?' active':''}" data-id="${esc(p.id)}">${esc(p.name)}</button>`).join('');
+    `<option value="${esc(p.id)}"${p.id===picked?' selected':''}>${esc(p.name)}</option>`).join('');
 }
-$('#who').onclick = e=>{
-  const b = e.target.closest('[data-id]'); if (!b) return;
-  picked = b.dataset.id;
+$('#who').onchange = ()=>{
+  picked = $('#who').value;
   try{ localStorage.setItem(WHO_KEY, picked); }catch(err){}
-  renderWho();
 };
 
 async function loadConfig(){
@@ -187,7 +194,7 @@ $('#form').onsubmit = async e=>{
   if (!name){ showMsg('err','Enter the expense item.'); return; }
   if (!(amount > 0)){ showMsg('err','Enter an amount greater than 0.'); return; }
   if (!sb){ showMsg('err','Not connected to the cloud. Expense was not saved.'); return; }
-  const btn = $('#save'); btn.disabled = true; btn.textContent = 'Saving…';
+  const btn = $('#save'); btn.disabled = true; btn.textContent = '…';
   try{
     const { data, error } = await withTimeout(sb.from('quick_expenses').insert({
       date: today(), spent_by: picked, item: name, amount
@@ -200,7 +207,7 @@ $('#form').onsubmit = async e=>{
   }catch(err){
     showMsg('err','Not saved: ' + (err.message||err));
   }finally{
-    btn.disabled = false; btn.textContent = 'Add expense';
+    btn.disabled = false; btn.textContent = '+';
   }
 };
 
