@@ -52,6 +52,16 @@
   .msg.ok{background:var(--info-bg);color:var(--accent)}
   .msg.err{background:var(--danger-bg);color:var(--danger)}
   .muted{color:var(--muted);font-size:13px}
+  .card + .card{margin-top:16px}
+  .card h3{margin:0 0 12px;font-size:13px;color:var(--muted);font-weight:600}
+  .totals{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+  .totals span{background:var(--inset);border-radius:10px;padding:8px 12px;font-size:13px}
+  .totals b{display:block;font-size:16px}
+  .entry{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+  .entry:last-child{border-bottom:none}
+  .entry .amt{margin-left:auto;font-weight:600;white-space:nowrap}
+  .entry .del{background:none;border:none;color:var(--muted);font-size:18px;padding:2px 6px;cursor:pointer}
+  .entry .del:hover{color:var(--danger)}
 </style>
 </head>
 <body>
@@ -76,6 +86,13 @@
   <div class="msg" id="msg" role="status" aria-live="polite"></div>
 </form>
 
+<section class="card">
+  <h3 id="listTitle">This month</h3>
+  <div class="totals" id="totals"></div>
+  <div id="list"><span class="muted">Loading…</span></div>
+  <p class="muted" style="margin:12px 0 0">These entries are kept separate from the main app's balance and activity.</p>
+</section>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL  = 'https://xebnciawqwscifzgrkbu.supabase.co';
@@ -91,6 +108,10 @@ const esc = s => String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>
 const today = () => new Date().toISOString().slice(0,10);
 const sb = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON) : null;
 let people = DEFAULT_PEOPLE;
+let entries = [];
+const thisMonth = () => today().slice(0,7);
+const rupees = n => '₹' + Math.round(n).toLocaleString('en-IN');
+const nameOf = id => (people.find(p=>p.id===id)||{}).name || id;
 let picked = null;
 try{ picked = localStorage.getItem(WHO_KEY) || localStorage.getItem('ghk_user'); }catch(e){}
 
@@ -123,6 +144,41 @@ async function loadConfig(){
   renderWho();
 }
 
+async function loadEntries(){
+  if (!sb) return;
+  const m = thisMonth();
+  try{
+    const { data, error } = await withTimeout(sb.from('quick_expenses').select('*')
+      .gte('date', m+'-01').order('date',{ascending:false}).order('created_at',{ascending:false}));
+    if (error) throw error;
+    entries = (data||[]).filter(r=>String(r.date).slice(0,7)===m);
+    renderEntries();
+  }catch(e){ $('#list').innerHTML = `<span class="muted">Could not load entries: ${esc(e.message||e)}</span>`; }
+}
+function renderEntries(){
+  $('#listTitle').textContent = new Date(thisMonth()+'-01T00:00').toLocaleDateString('en-IN',{month:'long',year:'numeric'});
+  const by = {}; let total = 0;
+  entries.forEach(r=>{ const a=Number(r.amount)||0; by[r.spent_by]=(by[r.spent_by]||0)+a; total+=a; });
+  $('#totals').innerHTML = entries.length ? `<span>Total<b>${rupees(total)}</b></span>` +
+    Object.keys(by).map(id=>`<span>${esc(nameOf(id))}<b>${rupees(by[id])}</b></span>`).join('') : '';
+  $('#list').innerHTML = entries.length ? entries.map(r=>
+    `<div class="entry"><span>${esc(r.item)}<br><span class="muted">${esc(nameOf(r.spent_by))} · ${
+      new Date(r.date+'T00:00').toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span></span>
+      <span class="amt">${rupees(Number(r.amount))}</span>
+      <button class="del" data-del="${esc(r.id)}" aria-label="Delete">×</button></div>`).join('')
+    : '<span class="muted">No entries yet this month.</span>';
+}
+$('#list').onclick = async e=>{
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  const r = entries.find(x=>x.id===b.dataset.del); if (!r) return;
+  if (!confirm(`Delete ${r.item} — ${rupees(Number(r.amount))}?`)) return;
+  try{
+    const { error } = await withTimeout(sb.from('quick_expenses').delete().eq('id', r.id));
+    if (error) throw error;
+    entries = entries.filter(x=>x.id!==r.id); renderEntries();
+  }catch(err){ showMsg('err','Not deleted: ' + (err.message||err)); }
+};
+
 $('#form').onsubmit = async e=>{
   e.preventDefault();
   const name = $('#item').value.trim();
@@ -133,13 +189,13 @@ $('#form').onsubmit = async e=>{
   if (!sb){ showMsg('err','Not connected to the cloud. Expense was not saved.'); return; }
   const btn = $('#save'); btn.disabled = true; btn.textContent = 'Saving…';
   try{
-    const { data, error } = await withTimeout(sb.from('expenses').insert({
-      date: today(), items: [{ name, amount }], total: amount, logged_by: picked, note: ''
-    }).select('id').single());
+    const { data, error } = await withTimeout(sb.from('quick_expenses').insert({
+      date: today(), spent_by: picked, item: name, amount
+    }).select('*').single());
     if (error) throw error;
     if (!data) throw new Error('Cloud did not confirm the change');
-    const who = (people.find(p=>p.id===picked)||{}).name || picked;
-    showMsg('ok', `Saved: ${name} — ₹${amount.toLocaleString('en-IN')} by ${who}`);
+    showMsg('ok', `Saved: ${name} — ${rupees(amount)} by ${nameOf(picked)}`);
+    entries.unshift(data); renderEntries();
     $('#item').value = ''; $('#amount').value = ''; $('#item').focus();
   }catch(err){
     showMsg('err','Not saved: ' + (err.message||err));
@@ -148,7 +204,7 @@ $('#form').onsubmit = async e=>{
   }
 };
 
-loadConfig();
+loadConfig().then(loadEntries);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>

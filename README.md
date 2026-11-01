@@ -37,4 +37,7 @@ Until a payer confirms, the app shows a monthly pending reminder for that user.
 - **Person-to-person payments:** under Add money → *Give to a person*, record money one
   payer hands another (e.g. Ritika gives Bhavneet ₹1,000). It does not touch the cook's
   balance — it only moves the "who owes whom" line in the payment summary.
+- **Simple expense page:** Settings → *Simple expense add* opens `quick-add.html`, which logs
+  just who spent, the item and the amount. These go to a separate `quick_expenses` table and
+  never change the main app's balance or activity.
 - **Backup:** use Settings → Export to save a JSON copy of the current cloud data.

@@ -37,6 +37,16 @@ create table if not exists transfers (
   created_at  timestamptz default now()
 );
 
+-- simple expenses from quick-add.html, kept separate from the main app's kitty
+create table if not exists quick_expenses (
+  id          uuid primary key default gen_random_uuid(),
+  date        date not null default current_date,
+  spent_by    text not null,          -- person id who spent it
+  item        text not null,
+  amount      numeric not null check (amount > 0),
+  created_at  timestamptz default now()
+);
+
 create table if not exists salaries (
   id        uuid primary key default gen_random_uuid(),
   month     text unique not null,     -- 'YYYY-MM:userId'; legacy 'YYYY-MM' rows still work
@@ -66,25 +76,28 @@ on conflict (month) do nothing;
 
 -- ---------- Access for the app's anon key ----------
 grant usage on schema public to anon, authenticated;
-grant all on advances, expenses, transfers, salaries, app_config to anon, authenticated;
+grant all on advances, expenses, transfers, salaries, app_config, quick_expenses to anon, authenticated;
 
 alter table advances   enable row level security;
 alter table transfers  enable row level security;
 alter table expenses   enable row level security;
 alter table salaries   enable row level security;
 alter table app_config enable row level security;
+alter table quick_expenses enable row level security;
 
 drop policy if exists "app access advances"   on advances;
 drop policy if exists "app access transfers"  on transfers;
 drop policy if exists "app access expenses"    on expenses;
 drop policy if exists "app access salaries"    on salaries;
 drop policy if exists "app access app_config"  on app_config;
+drop policy if exists "app access quick_expenses" on quick_expenses;
 
 create policy "app access advances"   on advances   for all using (true) with check (true);
 create policy "app access transfers"  on transfers  for all using (true) with check (true);
 create policy "app access expenses"   on expenses   for all using (true) with check (true);
 create policy "app access salaries"   on salaries   for all using (true) with check (true);
 create policy "app access app_config" on app_config for all using (true) with check (true);
+create policy "app access quick_expenses" on quick_expenses for all using (true) with check (true);
 
 -- ---------- Live sync (realtime) ----------
 do $$
@@ -96,4 +109,4 @@ begin
   begin execute 'alter publication supabase_realtime add table app_config'; exception when duplicate_object then null; end;
 end $$;
 
--- Done. You should see five tables under Table Editor.
+-- Done. You should see six tables under Table Editor.
